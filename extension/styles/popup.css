@@ -1,0 +1,580 @@
+/* ==============================================================================
+ * Social Guard: Professional Academic Project UI Theme
+ * High Contrast, Accessible, Clean Typography, Zero Clutter
+ * ============================================================================== */
+
+:root {
+  --bg-page: #0d1117;
+  --bg-card: #161b22;
+  --bg-subtle: #21262d;
+  --border-subtle: #30363d;
+  --border-highlight: #484f58;
+
+  --text-main: #f0f6fc;
+  --text-muted: #8b949e;
+  --text-dim: #6e7681;
+
+  --accent-blue: #58a6ff;
+  --accent-purple: #bc8cff;
+
+  --color-likely-real: #3fb950;
+  --bg-likely-real: rgba(63, 185, 80, 0.15);
+  --border-likely-real: rgba(63, 185, 80, 0.4);
+
+  --color-probably-real: #56d364;
+  --bg-probably-real: rgba(86, 211, 100, 0.15);
+  --border-probably-real: rgba(86, 211, 100, 0.4);
+
+  --color-uncertain: #d29922;
+  --bg-uncertain: rgba(210, 153, 34, 0.15);
+  --border-uncertain: rgba(210, 153, 34, 0.4);
+
+  --color-probably-fake: #db6d28;
+  --bg-probably-fake: rgba(219, 109, 40, 0.15);
+  --border-probably-fake: rgba(219, 109, 40, 0.4);
+
+  --color-likely-fake: #f85149;
+  --bg-likely-fake: rgba(248, 81, 73, 0.15);
+  --border-likely-fake: rgba(248, 81, 73, 0.4);
+
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, monospace;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  width: 410px;
+  max-height: 590px;
+  overflow-y: auto;
+  font-family: var(--font-sans);
+  background-color: var(--bg-page);
+  color: var(--text-main);
+  font-size: 13px;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+}
+
+.card-container {
+  padding: 14px;
+}
+
+/* Header */
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border-subtle);
+  margin-bottom: 10px;
+}
+
+.header-main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.brand-shield {
+  font-size: 20px;
+}
+
+.brand-title {
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  color: var(--text-main);
+}
+
+.brand-subtitle {
+  font-size: 10.5px;
+  color: var(--text-muted);
+}
+
+.badge-status {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 7px;
+  border-radius: 12px;
+  text-transform: uppercase;
+}
+
+.badge-online {
+  background: var(--bg-likely-real);
+  color: var(--color-likely-real);
+  border: 1px solid var(--border-likely-real);
+}
+
+.badge-connecting {
+  background: var(--bg-uncertain);
+  color: var(--color-uncertain);
+  border: 1px solid var(--border-uncertain);
+}
+
+.badge-offline {
+  background: var(--bg-likely-fake);
+  color: var(--color-likely-fake);
+  border: 1px solid var(--border-likely-fake);
+}
+
+/* Preset Toolbar for Academic Testing */
+.preset-toolbar {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  padding: 6px 10px;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.preset-label {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.preset-buttons {
+  display: flex;
+  gap: 5px;
+}
+
+.preset-btn {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 7px;
+  border-radius: 4px;
+  border: 1px solid var(--border-subtle);
+  cursor: pointer;
+  background: var(--bg-subtle);
+  color: var(--text-main);
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.preset-btn-real:hover { background: var(--bg-likely-real); border-color: var(--color-likely-real); color: var(--color-likely-real); }
+.preset-btn-uncertain:hover { background: var(--bg-uncertain); border-color: var(--color-uncertain); color: var(--color-uncertain); }
+.preset-btn-fake:hover { background: var(--bg-likely-fake); border-color: var(--color-likely-fake); color: var(--color-likely-fake); }
+
+/* Input Section */
+.input-section {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  padding: 10px;
+  margin-bottom: 12px;
+}
+
+.input-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.section-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  letter-spacing: 0.5px;
+}
+
+.btn-text {
+  background: none;
+  border: none;
+  color: var(--accent-blue);
+  font-size: 10.5px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.text-input {
+  width: 100%;
+  background: var(--bg-page);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  color: var(--text-main);
+  padding: 7px 9px;
+  font-size: 11.5px;
+  line-height: 1.4;
+  resize: vertical;
+  font-family: inherit;
+}
+
+.text-input:focus {
+  outline: none;
+  border-color: var(--accent-blue);
+}
+
+.meta-row {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.meta-chip {
+  font-size: 10px;
+  font-family: var(--font-mono);
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-subtle);
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: var(--text-muted);
+}
+
+.btn-verify {
+  width: 100%;
+  margin-top: 8px;
+  background: #1f6feb;
+  color: #ffffff;
+  border: 1px solid rgba(240, 246, 252, 0.1);
+  border-radius: 6px;
+  font-size: 12.5px;
+  font-weight: 700;
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.btn-verify:hover {
+  background: #388bfd;
+}
+
+/* Spinner */
+.spinner-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px 0;
+}
+
+.spinner {
+  width: 24px;
+  height: 24px;
+  border: 3px solid var(--border-subtle);
+  border-top-color: var(--accent-blue);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-bottom: 8px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.spinner-text {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.spinner-subtext {
+  font-size: 10.5px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+/* Error Box */
+.error-box {
+  background: var(--bg-likely-fake);
+  border: 1px solid var(--border-likely-fake);
+  border-radius: 6px;
+  padding: 10px;
+  margin-bottom: 12px;
+}
+
+.error-title {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--color-likely-fake);
+}
+
+.error-message {
+  font-size: 11px;
+  color: var(--text-main);
+  margin-top: 4px;
+}
+
+/* Section Dividers */
+.section-divider {
+  height: 1px;
+  background: var(--border-subtle);
+  margin: 12px 0;
+}
+
+.divider-subtle {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.06);
+  margin: 10px 0;
+}
+
+/* Primary Verdict Card */
+.verdict-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  padding: 12px 14px;
+}
+
+.verdict-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.sub-label {
+  display: block;
+  font-size: 9.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  letter-spacing: 0.5px;
+  margin-bottom: 3px;
+}
+
+.classification-badge {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 800;
+  padding: 4px 10px;
+  border-radius: 4px;
+  letter-spacing: 0.4px;
+}
+
+.verdict-likely-real { background: var(--bg-likely-real); color: var(--color-likely-real); border: 1px solid var(--border-likely-real); }
+.verdict-probably-real { background: var(--bg-probably-real); color: var(--color-probably-real); border: 1px solid var(--border-probably-real); }
+.verdict-uncertain { background: var(--bg-uncertain); color: var(--color-uncertain); border: 1px solid var(--border-uncertain); }
+.verdict-probably-fake { background: var(--bg-probably-fake); color: var(--color-probably-fake); border: 1px solid var(--border-probably-fake); }
+.verdict-likely-fake { background: var(--bg-likely-fake); color: var(--color-likely-fake); border: 1px solid var(--border-likely-fake); }
+
+.verdict-score-block {
+  text-align: right;
+}
+
+.score-display {
+  display: flex;
+  align-items: baseline;
+  justify-content: flex-end;
+  gap: 2px;
+}
+
+.score-num {
+  font-size: 22px;
+  font-weight: 800;
+  font-family: var(--font-mono);
+  color: var(--text-main);
+}
+
+.score-denom {
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+/* AI Metric Row */
+.ai-metric-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.ai-heading {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent-purple);
+}
+
+.ai-note {
+  display: block;
+  font-size: 9.5px;
+  color: var(--text-muted);
+}
+
+.ai-prob-badge {
+  font-size: 13px;
+  font-weight: 800;
+  font-family: var(--font-mono);
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: rgba(188, 140, 255, 0.12);
+  color: var(--accent-purple);
+  border: 1px solid rgba(188, 140, 255, 0.3);
+}
+
+/* General Section Headings */
+.section-block {
+  margin-bottom: 2px;
+}
+
+.section-title {
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.7px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
+/* Module Scores List */
+.module-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.module-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  padding: 6px 10px;
+}
+
+.module-name {
+  display: block;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.module-desc {
+  display: block;
+  font-size: 9.5px;
+  color: var(--text-dim);
+}
+
+.module-value-col {
+  text-align: right;
+  min-width: 75px;
+}
+
+.module-score-text {
+  font-size: 12px;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  color: var(--text-main);
+}
+
+.track {
+  width: 100%;
+  height: 4px;
+  background: var(--bg-subtle);
+  border-radius: 2px;
+  margin-top: 3px;
+  overflow: hidden;
+}
+
+.bar {
+  height: 100%;
+  background: var(--accent-blue);
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+/* Why This Result (XAI) */
+.summary-text {
+  font-size: 11.5px;
+  color: var(--text-main);
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-left: 3px solid var(--accent-blue);
+  border-radius: 4px;
+  padding: 8px 10px;
+  line-height: 1.4;
+  margin-bottom: 6px;
+}
+
+.reasons-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.reason-item {
+  font-size: 11px;
+  color: var(--text-muted);
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  line-height: 1.35;
+}
+
+.reason-item::before {
+  content: "•";
+  color: var(--accent-blue);
+  font-weight: bold;
+}
+
+/* Evidence Box */
+.evidence-box, .similar-box {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: 11px;
+}
+
+.evidence-item {
+  margin-bottom: 6px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.evidence-item:last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.evidence-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2px;
+}
+
+.evidence-pub {
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.evidence-rating {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 3px;
+}
+
+.rating-true { background: var(--bg-likely-real); color: var(--color-likely-real); }
+.rating-false { background: var(--bg-likely-fake); color: var(--color-likely-fake); }
+.rating-mixed { background: var(--bg-uncertain); color: var(--color-uncertain); }
+
+.evidence-link {
+  color: var(--accent-blue);
+  text-decoration: none;
+  font-size: 10.5px;
+  display: inline-block;
+  margin-top: 2px;
+}
+
+.evidence-link:hover {
+  text-decoration: underline;
+}
+
+.empty-state {
+  color: var(--text-dim);
+  font-style: italic;
+  font-size: 10.5px;
+}
+
+.hidden {
+  display: none !important;
+}

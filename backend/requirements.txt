@@ -1,0 +1,39 @@
+# Social Guard Backend Dependencies
+
+# Web & API Framework
+fastapi>=0.110.0
+uvicorn[standard]>=0.28.0
+pydantic>=2.6.0
+pydantic-settings>=2.2.0
+python-multipart>=0.0.9
+httpx>=0.27.0
+requests>=2.31.0
+
+# NLP & Machine Learning (Core Libraries)
+scikit-learn>=1.4.0
+numpy>=1.26.0
+pandas>=2.2.0
+sentence-transformers>=2.5.0
+transformers>=4.38.0
+torch>=2.2.0
+nltk>=3.8.1
+emoji>=2.10.1
+
+# Computer Vision & Image Processing
+opencv-python-headless>=4.9.0.80
+ImageHash>=4.3.1
+Pillow>=10.2.0
+pytesseract>=0.3.10
+
+# Database & Async Drivers
+sqlalchemy>=2.0.28
+asyncpg>=0.29.0
+psycopg2-binary>=2.9.9
+
+# Testing & Development Utilities
+pytest>=8.0.0
+pytest-asyncio>=0.23.5
+pytest-cov>=4.1.0
+black>=24.2.0
+flake8>=7.0.0
+python-dotenv>=1.0.1

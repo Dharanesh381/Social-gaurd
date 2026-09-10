@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Social Guard - Academic Content Verification</title>
+  <link rel="stylesheet" href="../styles/popup.css">
+</head>
+<body>
+  <div class="card-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="header-main">
+        <div class="brand-shield" aria-hidden="true">🛡️</div>
+        <div>
+          <h1 class="brand-title">SOCIAL GUARD</h1>
+          <p class="brand-subtitle">Social Media Content Verification</p>
+        </div>
+      </div>
+      <div id="backend-status-badge" class="badge-status badge-connecting" title="FastAPI Verification Backend Status">Connecting...</div>
+    </header>
+
+    <!-- Quick Test Scenarios (Academic Demo Toolbar) -->
+    <div class="preset-toolbar">
+      <span class="preset-label">Test Scenarios:</span>
+      <div class="preset-buttons">
+        <button id="preset-real-btn" class="preset-btn preset-btn-real" title="Load sample verified post">Likely Real</button>
+        <button id="preset-uncertain-btn" class="preset-btn preset-btn-uncertain" title="Load sample unverified claim">Uncertain</button>
+        <button id="preset-fake-btn" class="preset-btn preset-btn-fake" title="Load sample debunked hoax">Likely Fake</button>
+      </div>
+    </div>
+
+    <!-- Input Section -->
+    <div class="input-section">
+      <div class="input-header">
+        <label for="post-text-input" class="section-label">Post Content For Verification</label>
+        <button id="extract-page-btn" class="btn-text" title="Extract content from current browser tab">Extract from Tab</button>
+      </div>
+      <textarea id="post-text-input" class="text-input" rows="3" placeholder="Enter social media post text, extract from page, or select a test scenario above..."></textarea>
+      
+      <div class="meta-row">
+        <span id="detected-platform" class="meta-chip">Platform: TWITTER</span>
+        <span id="detected-comments-count" class="meta-chip">Comments: 2</span>
+        <span id="detected-media-count" class="meta-chip">Media: 1</span>
+      </div>
+
+      <button id="run-verify-btn" class="btn-verify">Analyze & Verify Content</button>
+    </div>
+
+    <!-- Loading State -->
+    <div id="loading-spinner" class="spinner-container hidden" aria-live="polite">
+      <div class="spinner"></div>
+      <p class="spinner-text">Executing Multi-Modal Verification Pipeline...</p>
+      <p class="spinner-subtext">Evaluating evidence, user graphs, comments & neural similarity</p>
+    </div>
+
+    <!-- Error State -->
+    <div id="error-box" class="error-box hidden" role="alert">
+      <div class="error-title">Verification Error</div>
+      <div id="error-message" class="error-message">Unable to reach local FastAPI service.</div>
+    </div>
+
+    <!-- Results Panel (Structured Layout) -->
+    <main id="results-container" class="results-container hidden">
+      
+      <!-- Primary Classification Banner -->
+      <section class="verdict-card" aria-label="Verification Summary">
+        <div class="verdict-row">
+          <div class="verdict-classification">
+            <span class="sub-label">Classification</span>
+            <div id="classification-badge" class="classification-badge">ANALYZING...</div>
+          </div>
+          <div class="verdict-score-block">
+            <span class="sub-label">Credibility Score</span>
+            <div class="score-display">
+              <span id="credibility-score-val" class="score-num">--</span>
+              <span class="score-denom">/ 100</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="divider-subtle"></div>
+
+        <div class="ai-metric-row">
+          <div class="ai-label-col">
+            <span class="ai-heading">AI Generation Probability</span>
+            <span class="ai-note">Independent metric (Orthogonal to factual credibility)</span>
+          </div>
+          <div id="ai-probability-val" class="ai-prob-badge">--%</div>
+        </div>
+      </section>
+
+      <div class="section-divider"></div>
+
+      <!-- Module Scores Section -->
+      <section class="section-block" aria-label="Module Scores">
+        <h2 class="section-title">MODULE SCORES</h2>
+        
+        <div class="module-list">
+          <div class="module-row">
+            <div class="module-info">
+              <span class="module-name">Comment Analysis</span>
+              <span class="module-desc">Duplicate spam, sentiment & burst patterns</span>
+            </div>
+            <div class="module-value-col">
+              <span id="score-comment" class="module-score-text">--/100</span>
+              <div class="track"><div id="bar-comment" class="bar" style="width: 0%;"></div></div>
+            </div>
+          </div>
+
+          <div class="module-row">
+            <div class="module-info">
+              <span class="module-name">Evidence Verification</span>
+              <span class="module-desc">Google Fact Check & publisher credibility</span>
+            </div>
+            <div class="module-value-col">
+              <span id="score-evidence" class="module-score-text">--/100</span>
+              <div class="track"><div id="bar-evidence" class="bar" style="width: 0%;"></div></div>
+            </div>
+          </div>
+
+          <div class="module-row">
+            <div class="module-info">
+              <span class="module-name">User Behaviour</span>
+              <span class="module-desc">Account age, velocity & anomaly scoring</span>
+            </div>
+            <div class="module-value-col">
+              <span id="score-behaviour" class="module-score-text">--/100</span>
+              <div class="track"><div id="bar-behaviour" class="bar" style="width: 0%;"></div></div>
+            </div>
+          </div>
+
+          <div class="module-row">
+            <div class="module-info">
+              <span class="module-name">Similar Content</span>
+              <span class="module-desc">Recycled hoaxes, pHash & S-BERT matching</span>
+            </div>
+            <div class="module-value-col">
+              <span id="score-similarity" class="module-score-text">--/100</span>
+              <div class="track"><div id="bar-similarity" class="bar" style="width: 0%;"></div></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div class="section-divider"></div>
+
+      <!-- Why This Result? (XAI) -->
+      <section class="section-block" aria-label="Explanation of Verdict">
+        <h2 class="section-title">WHY THIS RESULT?</h2>
+        <div id="explanation-summary" class="summary-text">
+          Evaluating analytical evidence...
+        </div>
+        <ul id="reasons-list" class="reasons-list">
+          <!-- Populated dynamically with backend factors -->
+        </ul>
+      </section>
+
+      <div class="section-divider"></div>
+
+      <!-- Evidence Section -->
+      <section class="section-block" aria-label="Fact Check Evidence">
+        <h2 class="section-title">EVIDENCE</h2>
+        <div id="evidence-container" class="evidence-box">
+          <!-- Fact checks or 'No existing fact-check found' -->
+        </div>
+      </section>
+
+      <div class="section-divider"></div>
+
+      <!-- Similar Content Section -->
+      <section class="section-block" aria-label="Similar Content Analysis">
+        <h2 class="section-title">SIMILAR CONTENT</h2>
+        <div id="similar-content-container" class="similar-box">
+          <!-- Historical corpus matches or 'Original content' -->
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <script type="module" src="popup.js"></script>
+</body>
+</html>
