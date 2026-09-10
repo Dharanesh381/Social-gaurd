@@ -33,15 +33,19 @@
     <!-- Input Section -->
     <div class="input-section">
       <div class="input-header">
-        <label for="post-text-input" class="section-label">Post Content For Verification</label>
+        <div class="header-label-group">
+          <label for="post-text-input" class="section-label">Post Content For Verification</label>
+          <span id="content-source-badge" class="source-badge source-live">LIVE TAB CONTENT</span>
+        </div>
         <button id="extract-page-btn" class="btn-text" title="Extract content from current browser tab">Extract from Tab</button>
       </div>
       <textarea id="post-text-input" class="text-input" rows="3" placeholder="Enter social media post text, extract from page, or select a test scenario above..."></textarea>
       
       <div class="meta-row">
         <span id="detected-platform" class="meta-chip">Platform: TWITTER</span>
-        <span id="detected-comments-count" class="meta-chip">Comments: 2</span>
-        <span id="detected-media-count" class="meta-chip">Media: 1</span>
+        <span id="detected-author" class="meta-chip">Author: @page_author</span>
+        <span id="detected-comments-count" class="meta-chip">Comments: 0</span>
+        <span id="detected-media-count" class="meta-chip">Media: 0</span>
       </div>
 
       <button id="run-verify-btn" class="btn-verify">Analyze & Verify Content</button>

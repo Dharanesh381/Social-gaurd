@@ -102,7 +102,7 @@ const TEST_PRESETS = {
   }
 };
 
-let activePayload = JSON.parse(JSON.stringify(TEST_PRESETS.real));
+let activePayload = null;
 
 function sanitizeHTML(str) {
   if (!str) return "";
@@ -117,8 +117,10 @@ function sanitizeHTML(str) {
 
 document.addEventListener("DOMContentLoaded", async () => {
   const statusBadge = document.getElementById("backend-status-badge");
+  const sourceBadge = document.getElementById("content-source-badge");
   const postTextInput = document.getElementById("post-text-input");
   const platformChip = document.getElementById("detected-platform");
+  const authorChip = document.getElementById("detected-author");
   const commentsChip = document.getElementById("detected-comments-count");
   const mediaChip = document.getElementById("detected-media-count");
 
@@ -133,11 +135,11 @@ document.addEventListener("DOMContentLoaded", async () => {
   const errorMessage = document.getElementById("error-message");
   const resultsContainer = document.getElementById("results-container");
 
-  // Load initial preset
-  loadPreset("real");
-
-  // Health check
+  // 1. Initial Health check
   await refreshBackendStatus();
+
+  // 2. Automatic Live Content Extraction on Popup Open with intelligent preset fallback
+  await attemptLiveTabExtraction(true);
 
   async function refreshBackendStatus() {
     statusBadge.innerText = "Connecting...";
@@ -152,73 +154,242 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   }
 
+  function setSourceBadge(mode, label) {
+    if (!sourceBadge) return;
+    sourceBadge.className = "source-badge";
+    if (mode === "live") {
+      sourceBadge.classList.add("source-live");
+      sourceBadge.innerText = label || "LIVE TAB CONTENT";
+    } else if (mode === "preset") {
+      sourceBadge.classList.add("source-preset");
+      sourceBadge.innerText = label || "TEST SCENARIO";
+    } else {
+      sourceBadge.classList.add("source-manual");
+      sourceBadge.innerText = label || "MANUAL INPUT";
+    }
+  }
+
+  function updateMetadataUI(payload) {
+    const platform = (payload.platform || "generic").toUpperCase();
+    platformChip.innerText = `Platform: ${platform}`;
+
+    const authorName = payload.author?.username ? `@${payload.author.username}` : "@page_author";
+    if (authorChip) authorChip.innerText = `Author: ${authorName}`;
+
+    const commentCount = Array.isArray(payload.comments) ? payload.comments.length : 0;
+    commentsChip.innerText = `Comments: ${commentCount}`;
+
+    const mediaCount = Array.isArray(payload.media) ? payload.media.length : 0;
+    mediaChip.innerText = `Media: ${mediaCount}`;
+  }
+
   function loadPreset(presetKey) {
     activePayload = JSON.parse(JSON.stringify(TEST_PRESETS[presetKey]));
     postTextInput.value = activePayload.text;
-    platformChip.innerText = `Platform: ${activePayload.platform.toUpperCase()}`;
-    commentsChip.innerText = `Comments: ${activePayload.comments.length}`;
-    mediaChip.innerText = `Media: ${activePayload.media.length}`;
+    setSourceBadge("preset", `PRESET: ${presetKey.toUpperCase()}`);
+    updateMetadataUI(activePayload);
     errorBox.classList.add("hidden");
+    resultsContainer.classList.add("hidden");
   }
 
   presetRealBtn.addEventListener("click", () => loadPreset("real"));
   presetUncertainBtn.addEventListener("click", () => loadPreset("uncertain"));
   presetFakeBtn.addEventListener("click", () => loadPreset("fake"));
 
+  // Track manual edits in textarea
+  postTextInput.addEventListener("input", () => {
+    errorBox.classList.add("hidden");
+    if (activePayload) {
+      activePayload.text = postTextInput.value;
+    } else {
+      activePayload = {
+        source: "manual",
+        platform: "generic",
+        text: postTextInput.value,
+        hashtags: [],
+        media: [],
+        author: { username: "manual_input", followers: 0, following: 0 },
+        comments: []
+      };
+    }
+    if (sourceBadge && !sourceBadge.classList.contains("source-preset")) {
+      setSourceBadge("manual", "CUSTOM INPUT");
+    }
+  });
+
   // Extract from current page
-  extractPageBtn.addEventListener("click", async () => {
+  async function attemptLiveTabExtraction(isAutoInit = false) {
     try {
-      if (typeof chrome === "undefined" || !chrome.tabs) {
-        alert("Chrome extension runtime not detected. Use the preset test buttons to test the UI.");
+      if (typeof chrome === "undefined" || !chrome.tabs || !chrome.tabs.query) {
+        if (!isAutoInit) {
+          showUserError("Chrome extension tab API not accessible. Running in browser simulation mode.");
+        }
+        if (!activePayload) loadPreset("real");
         return;
       }
 
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-      if (!tab) {
-        alert("No active browser tab found.");
+      if (!tab || !tab.id) {
+        if (!isAutoInit) showUserError("No active browser tab detected.");
+        if (!activePayload) loadPreset("real");
         return;
       }
 
-      chrome.tabs.sendMessage(tab.id, { action: "EXTRACT_PAGE_CONTENT" }, (response) => {
-        if (chrome.runtime.lastError || !response || response.status !== "SUCCESS") {
-          alert("Could not extract structured text from this page. You can paste text manually into the box.");
+      // Check if URL is internal chrome:// or extension://
+      const tabUrl = tab.url || "";
+      if (tabUrl.startsWith("chrome://") || tabUrl.startsWith("chrome-extension://") || tabUrl.startsWith("about:") || tabUrl.startsWith("edge://")) {
+        if (!isAutoInit) {
+          showUserError("Cannot extract content from internal browser settings pages. Please open a regular web page.");
+        }
+        if (!activePayload) loadPreset("real");
+        return;
+      }
+
+      // First try executing the extraction function directly in the page context via chrome.scripting
+      if (chrome.scripting && chrome.scripting.executeScript) {
+        try {
+          const results = await chrome.scripting.executeScript({
+            target: { tabId: tab.id },
+            func: () => {
+              if (typeof window.__SOCIAL_GUARD_EXTRACT__ === "function") {
+                return window.__SOCIAL_GUARD_EXTRACT__();
+              }
+              return null;
+            }
+          });
+
+          if (results && results[0] && results[0].result) {
+            const data = results[0].result;
+            if (data && data.text && data.text.length > 5) {
+              applyExtractedData(data, isAutoInit);
+              return;
+            }
+          }
+        } catch (scriptErr) {
+          console.warn("[Social Guard] Direct execution fallback attempt:", scriptErr);
+        }
+      }
+
+      // If direct execution didn't return, send message to content script or inject and retry
+      chrome.tabs.sendMessage(tab.id, { action: "EXTRACT_PAGE_CONTENT" }, async (response) => {
+        if (chrome.runtime.lastError || !response || response.status !== "SUCCESS" || !response.data) {
+          // Attempt programmatic injection in case page was loaded before extension
+          if (chrome.scripting && chrome.scripting.executeScript) {
+            try {
+              await chrome.scripting.executeScript({
+                target: { tabId: tab.id },
+                files: ["content/content_extractor.js"]
+              });
+
+              // Retry message after injection
+              chrome.tabs.sendMessage(tab.id, { action: "EXTRACT_PAGE_CONTENT" }, (retryResponse) => {
+                if (chrome.runtime.lastError || !retryResponse || retryResponse.status !== "SUCCESS" || !retryResponse.data) {
+                  handleExtractionFailure(isAutoInit);
+                } else {
+                  applyExtractedData(retryResponse.data, isAutoInit);
+                }
+              });
+              return;
+            } catch (injectErr) {
+              console.warn("Script injection fallback error:", injectErr);
+            }
+          }
+
+          handleExtractionFailure(isAutoInit);
           return;
         }
 
-        const data = response.data;
-        activePayload = {
-          platform: data.platform || "generic",
-          text: data.text ? data.text.trim() : "No text available.",
-          hashtags: data.hashtags || [],
-          media: (data.image_urls || []).map(url => ({ url, media_type: "image" })),
-          author: {
-            username: "page_author",
-            followers: 0,
-            following: 0
-          },
-          comments: data.comments || []
-        };
-
-        postTextInput.value = activePayload.text;
-        platformChip.innerText = `Platform: ${activePayload.platform.toUpperCase()}`;
-        commentsChip.innerText = `Comments: ${activePayload.comments.length}`;
-        mediaChip.innerText = `Media: ${activePayload.media.length}`;
+        applyExtractedData(response.data, isAutoInit);
       });
     } catch (err) {
       console.warn("Extraction error:", err);
-      alert("Extraction failed: " + err.message);
+      handleExtractionFailure(isAutoInit);
     }
+  }
+
+  function applyExtractedData(data, isAutoInit = false) {
+    if (!data || !data.text || data.text.trim().length < 4) {
+      handleExtractionFailure(isAutoInit);
+      return;
+    }
+
+    const safeMedia = (data.image_urls || [])
+      .filter(url => typeof url === "string" && (url.startsWith("http://") || url.startsWith("https://")))
+      .map(url => ({ url, media_type: "image" }));
+
+    // Completely replace active payload with clean live data (NEVER merge with NASA preset)
+    activePayload = {
+      source: "live_tab",
+      platform: (data.platform || "generic").toLowerCase(),
+      text: data.text.trim(),
+      hashtags: data.hashtags || [],
+      media: safeMedia,
+      author: data.author || {
+        username: "page_author",
+        followers: 0,
+        following: 0
+      },
+      comments: data.comments || []
+    };
+
+    postTextInput.value = activePayload.text;
+    setSourceBadge("live", "LIVE TAB CONTENT");
+    updateMetadataUI(activePayload);
+    errorBox.classList.add("hidden");
+    resultsContainer.classList.add("hidden");
+  }
+
+  function handleExtractionFailure(isAutoInit) {
+    if (isAutoInit) {
+      // If opening popup on a blank or unsupported page on init, load the preset cleanly
+      if (!activePayload) {
+        loadPreset("real");
+      }
+    } else {
+      setSourceBadge("manual", "EXTRACTION FAILED");
+      showUserError("Unable to extract structured content from this page. Please refresh the web page or paste text directly into the input box.");
+    }
+  }
+
+  function showUserError(msg) {
+    errorBox.classList.remove("hidden");
+    errorMessage.innerText = msg;
+  }
+
+  extractPageBtn.addEventListener("click", async () => {
+    errorBox.classList.add("hidden");
+    resultsContainer.classList.add("hidden");
+    await attemptLiveTabExtraction(false);
   });
 
   // Execute Verification
   runVerifyBtn.addEventListener("click", async () => {
     const rawText = postTextInput.value.trim();
     if (!rawText || rawText.length < 5) {
-      alert("Please provide at least 5 characters of post content to verify.");
+      showUserError("Please provide at least 5 characters of post content to verify.");
       return;
     }
 
-    activePayload.text = rawText;
+    if (!activePayload) {
+      activePayload = {
+        source: "manual",
+        platform: "generic",
+        text: rawText,
+        hashtags: [],
+        media: [],
+        author: { username: "user", followers: 0, following: 0 },
+        comments: []
+      };
+    } else {
+      activePayload.text = rawText;
+    }
+
+    // Safety check: Prevent submitting NASA demo data under "LIVE TAB CONTENT" label
+    if (activePayload.source === "live_tab" && activePayload.text.includes("NASA planetary science rovers confirm")) {
+      showUserError("Live extraction failed — demo content was not replaced. Please click 'Extract from Tab' or reload the page.");
+      return;
+    }
+
     loadingSpinner.classList.remove("hidden");
     resultsContainer.classList.add("hidden");
     errorBox.classList.add("hidden");
