@@ -52,12 +52,13 @@ class EvidenceVerifier:
             Dict conforming to:
             {
                 "evidence_score": float (0-100),
-                "status": "SUPPORTED" | "CONTRADICTED" | "MIXED/MISLEADING" | "NO_FACT_CHECK_FOUND" | "INSUFFICIENT_EVIDENCE",
+                "status": "SUPPORTED" | "CONTRADICTED" | "MIXED/MISLEADING" | "NO_FACT_CHECK_FOUND" | "API_KEY_MISSING" | "NO_CLAIM_DETECTED",
                 "claims": List[str],
                 "fact_checks": List[Dict],
                 "sources": List[Dict],
                 "flags": List[str],
-                "explanation": str
+                "explanation": str,
+                "diagnostics": Dict[str, Any]
             }
         """
         flags: list[str] = []
@@ -93,7 +94,14 @@ class EvidenceVerifier:
                 "fact_checks": [],
                 "sources": [],
                 "flags": ["NO_VERIFIABLE_CLAIMS_DETECTED"],
-                "explanation": "No verifiable factual claims could be isolated from the post content.",
+                "explanation": "No verifiable factual claims could be isolated from the post content (Neutral 50/100 baseline).",
+                "diagnostics": {
+                    "fact_check_status": "NO_CLAIM_DETECTED",
+                    "query_used": [],
+                    "result_count": 0,
+                    "source_count": 0,
+                    "normalization_status": "NO_CLAIMS"
+                }
             }
 
         # ----------------------------------------------------------------------
@@ -101,17 +109,23 @@ class EvidenceVerifier:
         # ----------------------------------------------------------------------
         all_matched_reviews: list[dict[str, Any]] = []
         sources_info: list[dict[str, Any]] = []
+        queries_attempted: list[str] = []
+        api_status_observed = "SUCCESS"
 
         for claim_query in extracted_claims:
+            queries_attempted.append(claim_query)
             api_resp = await self.api_client.search_claims(query=claim_query)
             status_code = api_resp.get("status")
 
             if status_code == "API_KEY_MISSING":
+                api_status_observed = "API_KEY_MISSING"
                 if "GOOGLE_FACT_CHECK_API_KEY_NOT_CONFIGURED" not in flags:
                     flags.append("GOOGLE_FACT_CHECK_API_KEY_NOT_CONFIGURED")
             elif status_code == "RATE_LIMITED":
+                api_status_observed = "RATE_LIMITED"
                 flags.append("FACT_CHECK_API_RATE_LIMITED")
             elif status_code == "TIMEOUT":
+                api_status_observed = "TIMEOUT"
                 flags.append("FACT_CHECK_API_TIMEOUT")
             elif status_code == "SUCCESS":
                 raw_claims = api_resp.get("claims", [])
@@ -151,17 +165,30 @@ class EvidenceVerifier:
         # Step 4: Decision Status and Evidence Score Calculation
         # ----------------------------------------------------------------------
         if not all_matched_reviews:
+            status = "NO_FACT_CHECK_FOUND"
+            if api_status_observed == "API_KEY_MISSING":
+                explanation = "Google Fact Check API key is not configured; evidence module assigned neutral baseline (50/100)."
+            else:
+                explanation = (
+                    "No matching third-party fact-check records found in Google Fact Check index. "
+                    "Assigned neutral baseline score (50/100). Absence of fact-checks does not verify or disprove content."
+                )
+
             return {
                 "evidence_score": 50.0,
-                "status": "NO_FACT_CHECK_FOUND",
+                "status": status,
                 "claims": extracted_claims,
                 "fact_checks": [],
                 "sources": [],
                 "flags": flags,
-                "explanation": (
-                    "No existing fact-check articles found for the extracted claims. "
-                    "Note: Absence of fact-checks does not verify or disprove the content."
-                ),
+                "explanation": explanation,
+                "diagnostics": {
+                    "fact_check_status": "NO_FACT_CHECK_FOUND" if api_status_observed == "SUCCESS" else api_status_observed,
+                    "query_used": queries_attempted,
+                    "result_count": 0,
+                    "source_count": 0,
+                    "normalization_status": "NEUTRAL_BASELINE"
+                }
             }
 
         # Weighted average of fact-check scores weighted by source credibility
@@ -182,11 +209,11 @@ class EvidenceVerifier:
         if false_count > 0 and true_count == 0:
             status = "CONTRADICTED"
             flags.append("DEBUNKED_BY_FACT_CHECKERS")
-            explanation = f"Extracted claim has been explicitly debunked/contradicted by {all_matched_reviews[0]['publisher']}."
+            explanation = f"Extracted claim has been explicitly contradicted/debunked by {all_matched_reviews[0]['publisher']} ({all_matched_reviews[0]['raw_rating']})."
         elif true_count > 0 and false_count == 0:
             status = "SUPPORTED"
             flags.append("VERIFIED_BY_FACT_CHECKERS")
-            explanation = f"Extracted claim is verified and supported by {all_matched_reviews[0]['publisher']}."
+            explanation = f"Extracted claim is verified and supported by {all_matched_reviews[0]['publisher']} ({all_matched_reviews[0]['raw_rating']})."
         elif false_count > 0 and true_count > 0:
             status = "MIXED/MISLEADING"
             flags.append("CONFLICTING_FACT_CHECK_REVIEWS")
@@ -206,6 +233,13 @@ class EvidenceVerifier:
             "sources": sources_info,
             "flags": flags,
             "explanation": explanation,
+            "diagnostics": {
+                "fact_check_status": "FACT_CHECK_FOUND",
+                "query_used": queries_attempted,
+                "result_count": len(all_matched_reviews),
+                "source_count": len(sources_info),
+                "normalization_status": f"WEIGHTED_{status}"
+            }
         }
 
 

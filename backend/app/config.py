@@ -44,7 +44,7 @@ class Settings(BaseSettings):
     WEIGHT_SIMILAR_CONTENT: float = 0.25
 
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=(".env", "backend/.env", "../backend/.env"),
         env_file_encoding="utf-8",
         case_sensitive=True,
         extra="ignore",

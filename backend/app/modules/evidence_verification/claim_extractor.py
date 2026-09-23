@@ -15,8 +15,8 @@ class BaseClaimExtractor(ABC):
 class SimpleClaimExtractor(BaseClaimExtractor):
     """Rule and sentence-boundary based claim extractor.
 
-    Cleans text, splits into candidate sentences, removes opinion markers,
-    and identifies verifiable assertion candidates.
+    Cleans text, strips sensationalist prefixes, splits into candidate sentences,
+    removes opinion markers, and generates concise verifiable assertion queries.
     """
 
     # Phrases indicating subjective opinions rather than verifiable factual claims
@@ -27,6 +27,19 @@ class SimpleClaimExtractor(BaseClaimExtractor):
         r"^personally",
         r"^maybe",
     ]
+
+    # Common social media clickbait / news alert prefixes to strip
+    SENSATIONAL_PREFIXES = [
+        r"^(breaking|urgent|alert|shocking|exclusive|just in|report|must share|watch|update|viral)\s*[:!—–-]*\s*",
+        r"^(please share|share to save lives|share this)\s*[:!—–-]*\s*",
+    ]
+
+    def clean_sentence_prefix(self, sentence: str) -> str:
+        """Strip sensationalist alert prefixes from candidate claims."""
+        s = sentence.strip()
+        for prefix in self.SENSATIONAL_PREFIXES:
+            s = re.sub(prefix, "", s, flags=re.IGNORECASE).strip()
+        return s
 
     def extract_claims(self, text: str, max_claims: int = 3) -> list[str]:
         if not text or not text.strip():
@@ -44,10 +57,12 @@ class SimpleClaimExtractor(BaseClaimExtractor):
         raw_sentences = re.split(r"(?<=[.!?])\s+|\n+", cleaned)
         candidates: list[str] = []
 
-        for sentence in raw_sentences:
-            s = sentence.strip()
-            # Filter out very short phrases or long rants
-            if len(s.split()) < 3 or len(s) < 15:
+        for raw_s in raw_sentences:
+            s = self.clean_sentence_prefix(raw_s)
+            s = s.strip("\"'“”‘’.,;:!? ")
+            
+            # Filter out very short phrases or trivial greetings
+            if len(s.split()) < 3 or len(s) < 10:
                 continue
 
             # Check if sentence starts with subjective opinion markers
@@ -58,11 +73,21 @@ class SimpleClaimExtractor(BaseClaimExtractor):
                     break
 
             if not is_opinion:
-                candidates.append(s)
+                # If sentence is excessively long (> 20 words), create a focused claim query
+                words = s.split()
+                if len(words) > 18:
+                    focused = " ".join(words[:16])
+                    if focused not in candidates:
+                        candidates.append(focused)
+                else:
+                    if s not in candidates:
+                        candidates.append(s)
 
-        # Fallback: if all sentences filtered out, return the cleaned first 200 chars
+        # Fallback: if all sentences filtered out, return the cleaned first 150 chars
         if not candidates and len(cleaned) >= 10:
-            candidates = [cleaned[:200]]
+            cleaned_sub = self.clean_sentence_prefix(cleaned)[:150].strip()
+            if cleaned_sub:
+                candidates = [cleaned_sub]
 
         return candidates[:max_claims]
 

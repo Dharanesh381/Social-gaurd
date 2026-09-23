@@ -19,6 +19,8 @@ class ExplainabilityEngine:
     - Never claim a signal exists if the module metrics/flags do not report it.
     - Clearly separate factual credibility from user behaviour anomalies and AI probability.
     - If no fact-check is found, explicitly explain that the claim remains unverified.
+    - Never claim author account longevity unless account_age_days is explicitly present in metadata.
+    - Clearly denote the local 3-item historical corpus boundary when no match is found in M4.
     """
 
     def generate_explanation(
@@ -28,14 +30,14 @@ class ExplainabilityEngine:
         module_breakdowns: dict[str, dict[str, Any]],
         ai_generated_probability: float | None = None,
     ) -> dict[str, Any]:
-        """Generate structured explainability response.
+        """Generate structured explainability response with complete factual trace.
 
         Args:
             final_score: Consolidated credibility score [0.0 - 100.0]
             classification: Verdict category (e.g. 'LIKELY REAL', 'PROBABLY FAKE')
             module_breakdowns: Dict containing raw outputs of all modules:
                 - 'comments': {score, metrics, flags}
-                - 'evidence': {score, status, claims, fact_checks, flags, explanation}
+                - 'evidence': {score, status, claims, fact_checks, flags, explanation, diagnostics}
                 - 'user_behaviour': {score, anomaly_score, metrics, flags, explanation}
                 - 'similarity': {score, text_similarity, image_similarity, recycled_content, flags, ...}
                 - 'fusion': {final_score, module_contributions, confidence_level, ...}
@@ -66,8 +68,9 @@ class ExplainabilityEngine:
         ev_flags = ev_data.get("flags", [])
 
         if ev_status == "SUPPORTED":
-            top_pub = ev_checks[0]["publisher"] if ev_checks else "fact-checking registry"
-            pos_msg = f"Evidence strongly supports the claim (verified by {top_pub})."
+            top_pub = ev_checks[0].get("publisher", "fact-checking registry") if ev_checks else "fact-checking registry"
+            top_rating = ev_checks[0].get("raw_rating") or ev_checks[0].get("textual_rating") or "Verified"
+            pos_msg = f"Evidence strongly supports the claim (verified by {top_pub}: '{top_rating}')."
             positive_factors.append({
                 "factor": pos_msg,
                 "module": "evidence_verification",
@@ -76,8 +79,9 @@ class ExplainabilityEngine:
             })
             module_explanations["evidence_verification"] = pos_msg
         elif ev_status == "CONTRADICTED":
-            top_pub = ev_checks[0]["publisher"] if ev_checks else "fact-checking registry"
-            neg_msg = f"Evidence strongly contradicts the claim (debunked by {top_pub})."
+            top_pub = ev_checks[0].get("publisher", "fact-checking registry") if ev_checks else "fact-checking registry"
+            top_rating = ev_checks[0].get("raw_rating") or ev_checks[0].get("textual_rating") or "False"
+            neg_msg = f"Evidence strongly contradicts the claim (debunked by {top_pub}: '{top_rating}')."
             negative_factors.append({
                 "factor": neg_msg,
                 "module": "evidence_verification",
@@ -94,8 +98,12 @@ class ExplainabilityEngine:
                 "evidence_score": ev_score,
             })
             module_explanations["evidence_verification"] = neg_msg
+        elif "GOOGLE_FACT_CHECK_API_KEY_NOT_CONFIGURED" in ev_flags:
+            neutral_msg = "Google Fact Check API key is not configured; evidence module remained neutral (50/100)."
+            module_explanations["evidence_verification"] = neutral_msg
+            confidence_notes.append("Fact Check API key unconfigured; evidence module defaulted to neutral.")
         else:
-            neutral_msg = "No existing fact-check was found for the extracted claims; factual veracity remains uncertain."
+            neutral_msg = "No existing fact-check was found on Google Fact Check Tools; evidence module remained neutral (50/100)."
             module_explanations["evidence_verification"] = neutral_msg
             confidence_notes.append("Absence of indexed fact-checks does not verify or disprove the post.")
 
@@ -106,22 +114,23 @@ class ExplainabilityEngine:
         sim_score = sim_data.get("score", 75.0)
         sim_recycled = sim_data.get("recycled_content", False)
         sim_flags = sim_data.get("flags", [])
+        corpus_count = sim_data.get("corpus_size", 3)
         earliest_ts = sim_data.get("earliest_matching_timestamp")
 
         if sim_recycled:
             ts_str = f" from {earliest_ts[:10]}" if earliest_ts else ""
-            neg_msg = f"Similar content was found from an earlier timestamp{ts_str}, indicating recycled material."
+            neg_msg = f"Similar content was found from an earlier timestamp{ts_str}, indicating recycled material in local corpus."
             if "MATCHES_KNOWN_DEBUNKED_VIRAL_NARRATIVE" in sim_flags:
-                neg_msg = f"Similar content was found from an earlier timestamp{ts_str}, matching a known debunked historical viral narrative."
+                neg_msg = f"Content matched a known debunked historical viral narrative in local corpus{ts_str}."
             negative_factors.append({
                 "factor": neg_msg,
                 "module": "similar_content",
                 "impact_weight": 0.25,
                 "similarity_score": sim_score,
             })
-            module_explanations["similar_content"] = neg_msg
+            module_explanations["similar_content"] = f"Similar content was found from an earlier timestamp{ts_str}, indicating recycled material."
         elif sim_score >= 80.0:
-            pos_msg = "Post displays high original context with no match against recycled hoax databases."
+            pos_msg = f"No matching item found in current {corpus_count}-item local historical corpus (no recycled hoax detected)."
             positive_factors.append({
                 "factor": pos_msg,
                 "module": "similar_content",
@@ -131,7 +140,7 @@ class ExplainabilityEngine:
             module_explanations["similar_content"] = pos_msg
         else:
             module_explanations["similar_content"] = (
-                f"Moderate similarity ({sim_data.get('text_similarity', 0.0):.2f}) detected against related corpus."
+                f"Moderate similarity ({sim_data.get('text_similarity', 0.0):.2f}) detected against {corpus_count}-item local historical corpus."
             )
 
         # ----------------------------------------------------------------------
@@ -141,10 +150,11 @@ class ExplainabilityEngine:
         comm_score = comm_data.get("score", 50.0)
         comm_metrics = comm_data.get("metrics", {})
         comm_flags = comm_data.get("flags", [])
+        n_comm = comm_metrics.get("comment_count", 0)
 
         comm_reasons = []
-        if "HIGH_DUPLICATE_COMMENT_RATIO" in comm_flags or comm_metrics.get("duplicate_ratio", 0) >= 0.30:
-            neg_msg = "Multiple repeated/near-duplicate comments were detected (potential copypasta/bot campaign)."
+        if "HIGH_DUPLICATE_COMMENT_RATIO" in comm_flags or (n_comm >= 3 and comm_metrics.get("duplicate_ratio", 0) >= 0.35):
+            neg_msg = f"Multiple repeated/near-duplicate comments were detected ({comm_metrics.get('duplicate_ratio', 0)*100:.0f}% duplicate ratio), indicating potential coordinated copypasta."
             negative_factors.append({
                 "factor": neg_msg,
                 "module": "comment_analysis",
@@ -153,8 +163,8 @@ class ExplainabilityEngine:
             })
             comm_reasons.append(neg_msg)
 
-        if "TEMPORAL_BURST_ACTIVITY_DETECTED" in comm_flags:
-            neg_msg = "Comment activity shows an abnormal arrival burst (potential brigading spike)."
+        if "TEMPORAL_BURST_ACTIVITY_DETECTED" in comm_flags and n_comm >= 5:
+            neg_msg = "Comment activity exhibits an abnormal arrival burst (potential brigading spike)."
             negative_factors.append({
                 "factor": neg_msg,
                 "module": "comment_analysis",
@@ -162,8 +172,8 @@ class ExplainabilityEngine:
             })
             comm_reasons.append(neg_msg)
 
-        if "EXCESSIVE_EMOJI_SPAM" in comm_flags:
-            neg_msg = "Disproportionate repetitive emoji flooding detected in comments."
+        if "EXCESSIVE_EMOJI_SPAM" in comm_flags and n_comm >= 3:
+            neg_msg = "Repetitive emoji flooding detected in discussion thread."
             negative_factors.append({
                 "factor": neg_msg,
                 "module": "comment_analysis",
@@ -171,8 +181,12 @@ class ExplainabilityEngine:
             })
             comm_reasons.append(neg_msg)
 
-        if comm_score >= 80.0 and not comm_reasons:
-            pos_msg = "Discussion thread displays organic, healthy, diverse user responses."
+        if n_comm == 0 or "NO_COMMENTS_AVAILABLE" in comm_flags:
+            module_explanations["comment_analysis"] = "No comments were extracted from the post; comment analysis module remained neutral (50/100)."
+        elif n_comm <= 2 and not comm_reasons:
+            module_explanations["comment_analysis"] = f"{n_comm} comment(s) extracted; sample size too small for statistical coordination analysis."
+        elif comm_score >= 80.0 and not comm_reasons:
+            pos_msg = f"Discussion thread ({n_comm} comments) displays organic, healthy, diverse user responses."
             positive_factors.append({
                 "factor": pos_msg,
                 "module": "comment_analysis",
@@ -183,7 +197,7 @@ class ExplainabilityEngine:
         elif comm_reasons:
             module_explanations["comment_analysis"] = " ".join(comm_reasons)
         else:
-            module_explanations["comment_analysis"] = "Comment discussion is moderate with no major anomaly detected."
+            module_explanations["comment_analysis"] = f"Comment thread ({n_comm} comments) shows standard baseline activity with no major anomalies."
 
         # ----------------------------------------------------------------------
         # 4. EVALUATE MODULE 3: USER BEHAVIOUR (Weight 15%)
@@ -192,40 +206,45 @@ class ExplainabilityEngine:
         user_score = user_data.get("score", 50.0)
         user_flags = user_data.get("flags", [])
         user_anom = user_data.get("anomaly_score", 0.0)
+        user_metrics = user_data.get("metrics", {})
+        has_age = user_metrics.get("account_age_days") is not None
 
         user_reasons = []
-        if "ANOMALOUS_BEHAVIOURAL_PATTERN" in user_flags or user_anom >= 0.60:
-            neg_msg = "Author activity contains anomalous behavioural patterns (e.g. unusual posting velocity or timeline repetition)."
-            negative_factors.append({
-                "factor": neg_msg,
-                "module": "user_behaviour",
-                "impact_weight": 0.15,
-                "anomaly_score": user_anom,
-            })
-            user_reasons.append(neg_msg)
-
-        if "NEW_ACCOUNT_HIGH_POSTING_VELOCITY" in user_flags:
-            neg_msg = "Brand new account exhibiting aggressive posting velocity."
-            negative_factors.append({
-                "factor": neg_msg,
-                "module": "user_behaviour",
-                "impact_weight": 0.15,
-            })
-            user_reasons.append(neg_msg)
-
-        if user_score >= 80.0 and not user_reasons:
-            pos_msg = "Author account demonstrates mature longevity, balanced follower ratio, and normal activity."
-            positive_factors.append({
-                "factor": pos_msg,
-                "module": "user_behaviour",
-                "impact_weight": 0.15,
-                "behaviour_score": user_score,
-            })
-            module_explanations["user_behaviour"] = pos_msg
-        elif user_reasons:
-            module_explanations["user_behaviour"] = " ".join(user_reasons)
+        if "USER_METADATA_UNAVAILABLE" in user_flags or (not user_flags and not user_metrics and user_score == 50.0):
+            module_explanations["user_behaviour"] = "User profile metadata was unavailable from the page; user behaviour module remained neutral (50/100)."
         else:
-            module_explanations["user_behaviour"] = "Author behaviour metrics show standard baseline activity."
+            if "ANOMALOUS_BEHAVIOURAL_PATTERN" in user_flags or user_anom >= 0.60:
+                neg_msg = "Author activity contains anomalous behavioural patterns (e.g. unusual posting velocity or timeline repetition)."
+                negative_factors.append({
+                    "factor": neg_msg,
+                    "module": "user_behaviour",
+                    "impact_weight": 0.15,
+                    "anomaly_score": user_anom,
+                })
+                user_reasons.append(neg_msg)
+
+            if "NEW_ACCOUNT_HIGH_POSTING_VELOCITY" in user_flags:
+                neg_msg = f"Brand new account ({user_metrics.get('account_age_days', 0):.0f} days) exhibiting aggressive posting velocity."
+                negative_factors.append({
+                    "factor": neg_msg,
+                    "module": "user_behaviour",
+                    "impact_weight": 0.15,
+                })
+                user_reasons.append(neg_msg)
+
+            if user_score >= 80.0 and not user_reasons and has_age:
+                pos_msg = f"Author account demonstrates mature longevity ({user_metrics.get('account_age_days', 0):.0f} days) and balanced activity."
+                positive_factors.append({
+                    "factor": pos_msg,
+                    "module": "user_behaviour",
+                    "impact_weight": 0.15,
+                    "behaviour_score": user_score,
+                })
+                module_explanations["user_behaviour"] = pos_msg
+            elif user_reasons:
+                module_explanations["user_behaviour"] = " ".join(user_reasons)
+            else:
+                module_explanations["user_behaviour"] = "Author behaviour metrics show standard baseline activity."
 
         # ----------------------------------------------------------------------
         # 5. SORT & RANK CONTRIBUTING FACTORS
@@ -248,20 +267,19 @@ class ExplainabilityEngine:
             summary_sentences.append(f"Key strength: {top_pos}")
 
         if ev_status == "NO_FACT_CHECK_FOUND":
-            summary_sentences.append("No authoritative fact-check was found; verification relies on social and temporal provenance.")
+            summary_sentences.append("No matching indexed fact-check was found on Google Fact Check Tools; evidence module remained neutral.")
 
         # ----------------------------------------------------------------------
         # 7. DECOUPLED AI-GENERATION PROBABILITY NOTE
         # ----------------------------------------------------------------------
         if ai_generated_probability is not None:
-            # Handle both 0.0 - 1.0 fraction or 0.0 - 100.0 percentage
             ai_pct = ai_generated_probability if ai_generated_probability > 1.0 else ai_generated_probability * 100.0
             if ai_pct >= 70.0:
-                ai_note = f"Text demonstrates high probability ({ai_pct:.1f}%) of synthetic/AI generation. Note: AI-generated text is not inherently false."
+                ai_note = f"Statistical AI-generation indicator suggests high probability ({ai_pct:.1f}%) of synthetic/AI generation. Note: Stylistic indicators are orthogonal to factual credibility and do not prove content is false."
             elif ai_pct <= 30.0:
-                ai_note = f"Text displays human-written stylistic distribution (AI probability: {ai_pct:.1f}%)."
+                ai_note = f"Text displays human-written stylistic distribution (Statistical AI indicator: {ai_pct:.1f}%)."
             else:
-                ai_note = f"Text stylistic markers are mixed (AI probability: {ai_pct:.1f}%)."
+                ai_note = f"Text stylistic markers are mixed (Statistical AI indicator: {ai_pct:.1f}%)."
             confidence_notes.append(ai_note)
 
         return {

@@ -33,6 +33,7 @@ class UserBehaviourAnalyzer:
             {
                 "behaviour_score": float (0-100),
                 "anomaly_score": float (0.0 to 1.0),
+                "status": str,
                 "metrics": Dict[str, Any],
                 "flags": List[str],
                 "explanation": str
@@ -41,12 +42,21 @@ class UserBehaviourAnalyzer:
         flags: list[str] = []
 
         # ----------------------------------------------------------------------
-        # Edge Case 1: Missing profile metadata
+        # Edge Case 1: Missing profile or unavailable metadata
+        # If account age is None and followers/following are 0 (e.g. basic extracted handle),
+        # treat as unavailable metadata and return neutral baseline 50.0
         # ----------------------------------------------------------------------
-        if profile is None:
+        is_metadata_unavailable = (
+            profile is None
+            or (profile.account_age_days is None and profile.followers == 0 and profile.following == 0)
+        )
+
+        if is_metadata_unavailable:
+            username = profile.username if profile else "unknown"
             return {
                 "behaviour_score": 50.0,  # Neutral baseline
                 "anomaly_score": 0.0,
+                "status": "USER_METADATA_UNAVAILABLE",
                 "metrics": {
                     "account_age_days": None,
                     "followers": None,
@@ -57,8 +67,8 @@ class UserBehaviourAnalyzer:
                 },
                 "flags": ["USER_METADATA_UNAVAILABLE"],
                 "explanation": (
-                    "User profile metadata is not publicly available. "
-                    "Assigned neutral baseline score."
+                    f"User profile metadata for '{username}' was not available from the page. "
+                    "Assigned neutral baseline score (50/100)."
                 ),
             }
 
@@ -135,7 +145,7 @@ class UserBehaviourAnalyzer:
         if behaviour_score >= 75.0:
             explanation = (
                 f"Account '{profile.username}' exhibits mature, balanced engagement patterns "
-                f"with normal posting velocity ({features['posts_per_day']} posts/day)."
+                f"with normal posting velocity ({features['posts_per_day']} posts/day) and longevity ({features['account_age_days']:.0f} days)."
             )
         elif behaviour_score >= 50.0:
             explanation = (
@@ -158,6 +168,7 @@ class UserBehaviourAnalyzer:
         return {
             "behaviour_score": behaviour_score,
             "anomaly_score": norm_anomaly_score,
+            "status": "COMPLETED",
             "metrics": combined_metrics,
             "flags": flags,
             "explanation": explanation,

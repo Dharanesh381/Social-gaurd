@@ -7,7 +7,7 @@
 import { SocialGuardApiClient } from "./api_client.js";
 
 // ==============================================================================
-// 1. ACADEMIC TEST PRESET SCENARIOS
+// 1. ACADEMIC TEST PRESET SCENARIOS (Clearly Demarcated Test Data)
 // ==============================================================================
 
 const TEST_PRESETS = {
@@ -104,11 +104,15 @@ const TEST_PRESETS = {
 
 let activePayload = null;
 
-function sanitizeHTML(str) {
-  if (!str) return "";
-  const temp = document.createElement("div");
-  temp.textContent = str;
-  return temp.innerHTML;
+function computeSimpleHash(str) {
+  if (!str) return "00000000";
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash |= 0;
+  }
+  return Math.abs(hash).toString(16).padStart(8, "0");
 }
 
 // ==============================================================================
@@ -138,7 +142,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   // 1. Initial Health check
   await refreshBackendStatus();
 
-  // 2. Automatic Live Content Extraction on Popup Open with intelligent preset fallback
+  // 2. Automatic Live Content Extraction on Popup Open
   await attemptLiveTabExtraction(true);
 
   async function refreshBackendStatus() {
@@ -185,6 +189,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   function loadPreset(presetKey) {
     activePayload = JSON.parse(JSON.stringify(TEST_PRESETS[presetKey]));
+    activePayload.source = "preset";
     postTextInput.value = activePayload.text;
     setSourceBadge("preset", `PRESET: ${presetKey.toUpperCase()}`);
     updateMetadataUI(activePayload);
@@ -201,6 +206,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     errorBox.classList.add("hidden");
     if (activePayload) {
       activePayload.text = postTextInput.value;
+      if (activePayload.source !== "preset") {
+        activePayload.source = "manual";
+      }
     } else {
       activePayload = {
         source: "manual",
@@ -213,7 +221,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       };
     }
     if (sourceBadge && !sourceBadge.classList.contains("source-preset")) {
-      setSourceBadge("manual", "CUSTOM INPUT");
+      setSourceBadge("manual", "MANUAL INPUT");
     }
   });
 
@@ -222,7 +230,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     try {
       if (typeof chrome === "undefined" || !chrome.tabs || !chrome.tabs.query) {
         if (!isAutoInit) {
-          showUserError("Chrome extension tab API not accessible. Running in browser simulation mode.");
+          showUserError("Chrome extension tab API not accessible. Running in simulation mode.");
         }
         if (!activePayload) loadPreset("real");
         return;
@@ -239,13 +247,13 @@ document.addEventListener("DOMContentLoaded", async () => {
       const tabUrl = tab.url || "";
       if (tabUrl.startsWith("chrome://") || tabUrl.startsWith("chrome-extension://") || tabUrl.startsWith("about:") || tabUrl.startsWith("edge://")) {
         if (!isAutoInit) {
-          showUserError("Cannot extract content from internal browser settings pages. Please open a regular web page.");
+          showUserError("Cannot extract content from internal browser settings pages. Please open a public web page.");
         }
         if (!activePayload) loadPreset("real");
         return;
       }
 
-      // First try executing the extraction function directly in the page context via chrome.scripting
+      // First try executing the extraction function directly in page context
       if (chrome.scripting && chrome.scripting.executeScript) {
         try {
           const results = await chrome.scripting.executeScript({
@@ -266,14 +274,14 @@ document.addEventListener("DOMContentLoaded", async () => {
             }
           }
         } catch (scriptErr) {
-          console.warn("[Social Guard] Direct execution fallback attempt:", scriptErr);
+          console.warn("[Social Guard] Direct execution fallback:", scriptErr);
         }
       }
 
-      // If direct execution didn't return, send message to content script or inject and retry
+      // Message content script
       chrome.tabs.sendMessage(tab.id, { action: "EXTRACT_PAGE_CONTENT" }, async (response) => {
         if (chrome.runtime.lastError || !response || response.status !== "SUCCESS" || !response.data) {
-          // Attempt programmatic injection in case page was loaded before extension
+          // Attempt programmatic injection in case page was loaded before extension was loaded
           if (chrome.scripting && chrome.scripting.executeScript) {
             try {
               await chrome.scripting.executeScript({
@@ -281,7 +289,6 @@ document.addEventListener("DOMContentLoaded", async () => {
                 files: ["content/content_extractor.js"]
               });
 
-              // Retry message after injection
               chrome.tabs.sendMessage(tab.id, { action: "EXTRACT_PAGE_CONTENT" }, (retryResponse) => {
                 if (chrome.runtime.lastError || !retryResponse || retryResponse.status !== "SUCCESS" || !retryResponse.data) {
                   handleExtractionFailure(isAutoInit);
@@ -291,7 +298,7 @@ document.addEventListener("DOMContentLoaded", async () => {
               });
               return;
             } catch (injectErr) {
-              console.warn("Script injection fallback error:", injectErr);
+              console.warn("[Social Guard] Script injection error:", injectErr);
             }
           }
 
@@ -302,7 +309,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         applyExtractedData(response.data, isAutoInit);
       });
     } catch (err) {
-      console.warn("Extraction error:", err);
+      console.warn("[Social Guard] Extraction error:", err);
       handleExtractionFailure(isAutoInit);
     }
   }
@@ -317,9 +324,10 @@ document.addEventListener("DOMContentLoaded", async () => {
       .filter(url => typeof url === "string" && (url.startsWith("http://") || url.startsWith("https://")))
       .map(url => ({ url, media_type: "image" }));
 
-    // Completely replace active payload with clean live data (NEVER merge with NASA preset)
+    // Completely replace active payload with clean live data (Never merge with presets)
     activePayload = {
       source: "live_tab",
+      post_id: data.post_id || null,
       platform: (data.platform || "generic").toLowerCase(),
       text: data.text.trim(),
       hashtags: data.hashtags || [],
@@ -332,6 +340,19 @@ document.addEventListener("DOMContentLoaded", async () => {
       comments: data.comments || []
     };
 
+    const textHash = computeSimpleHash(activePayload.text);
+    console.log("[Social Guard Popup] LIVE_EXTRACTION_DEBUG:", {
+      platform: activePayload.platform,
+      post_id: activePayload.post_id,
+      text_hash: textHash,
+      text_length: activePayload.text.length,
+      text_preview: activePayload.text.slice(0, 80),
+      author: activePayload.author?.username,
+      comment_count: activePayload.comments.length,
+      media_count: activePayload.media.length,
+      source_mode: "live_tab"
+    });
+
     postTextInput.value = activePayload.text;
     setSourceBadge("live", "LIVE TAB CONTENT");
     updateMetadataUI(activePayload);
@@ -341,13 +362,12 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   function handleExtractionFailure(isAutoInit) {
     if (isAutoInit) {
-      // If opening popup on a blank or unsupported page on init, load the preset cleanly
       if (!activePayload) {
         loadPreset("real");
       }
     } else {
       setSourceBadge("manual", "EXTRACTION FAILED");
-      showUserError("Unable to extract structured content from this page. Please refresh the web page or paste text directly into the input box.");
+      showUserError("Unable to extract structured content from this page. Please paste text directly into the input box.");
     }
   }
 
@@ -403,7 +423,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       renderResults(result);
     } catch (err) {
       errorBox.classList.remove("hidden");
-      errorMessage.innerText = `Verification request failed: ${err.message}. Please verify the FastAPI backend is running on http://127.0.0.1:8000.`;
+      errorMessage.innerText = `Verification request failed: ${err.message}. Please verify the FastAPI backend is running on port 8000.`;
       await refreshBackendStatus();
     } finally {
       loadingSpinner.classList.add("hidden");
@@ -411,7 +431,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 
   // ============================================================================
-  // 3. RESULTS RENDERER (Strictly Aligned with Prompt Specification)
+  // 3. RESULTS RENDERER
   // ============================================================================
 
   function renderResults(res) {
@@ -432,21 +452,44 @@ document.addEventListener("DOMContentLoaded", async () => {
     else if (classification === "PROBABLY FAKE") badgeEl.classList.add("verdict-probably-fake");
     else badgeEl.classList.add("verdict-likely-fake");
 
-    // 2. AI Probability (Decoupled Output)
+    // 2. AI Probability (Decoupled Orthogonal Output)
     const aiProbEl = document.getElementById("ai-probability-val");
     if (res.ai_generation_probability != null) {
       const pct = Math.round(res.ai_generation_probability * 100);
       aiProbEl.innerText = `${pct}%`;
     } else {
-      aiProbEl.innerText = "N/A (No Media/Insufficient Text)";
+      aiProbEl.innerText = "N/A (Statistical Metric)";
     }
 
-    // 3. Module Scores (0 - 100)
+    // 3. Module Scores & Specific Operational Statuses
     const scores = res.module_scores || {};
-    updateModuleScore("comment", scores.comment_analysis);
-    updateModuleScore("evidence", scores.evidence_verification);
-    updateModuleScore("behaviour", scores.user_behaviour);
-    updateModuleScore("similarity", scores.similar_content);
+    const breakdowns = res.module_results?.module_breakdowns || {};
+
+    const evData = breakdowns.evidence || {};
+    const commData = breakdowns.comments || {};
+    const ubData = breakdowns.user_behaviour || {};
+    const simData = breakdowns.similarity || {};
+
+    // M1 Status
+    const commCount = commData.metrics?.comment_count ?? (activePayload?.comments?.length || 0);
+    const commStatus = commCount === 0 ? "No comments on post" : `${commCount} comment(s) analyzed`;
+    updateModuleScore("comment", scores.comment_analysis, commStatus);
+
+    // M2 Status
+    let evStatusText = "No indexed fact-check found";
+    if (evData.status === "SUPPORTED") evStatusText = "Verified by fact-checkers";
+    else if (evData.status === "CONTRADICTED") evStatusText = "Debunked by fact-checkers";
+    else if (evData.status === "MIXED/MISLEADING") evStatusText = "Mixed / missing context";
+    else if (evData.status === "API_KEY_MISSING") evStatusText = "Fact Check API key not configured";
+    updateModuleScore("evidence", scores.evidence_verification, evStatusText);
+
+    // M3 Status
+    const ubStatus = ubData.metrics?.account_age_days != null ? "Profile history analyzed" : "Profile metadata unavailable";
+    updateModuleScore("behaviour", scores.user_behaviour, ubStatus);
+
+    // M4 Status
+    const simStatus = simData.recycled_content ? "Recycled content detected" : "No match in 3-item local corpus";
+    updateModuleScore("similarity", scores.similar_content, simStatus);
 
     // 4. WHY THIS RESULT? (Explainability Synthesis)
     const summaryEl = document.getElementById("explanation-summary");
@@ -471,7 +514,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     const evidenceContainer = document.getElementById("evidence-container");
     evidenceContainer.innerHTML = "";
 
-    const evData = res.module_results?.module_breakdowns?.evidence || {};
     const factChecks = evData.fact_checks || [];
 
     if (factChecks.length > 0) {
@@ -504,7 +546,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           link.href = fc.publisher_url;
           link.target = "_blank";
           link.className = "evidence-link";
-          link.textContent = `View Source: ${fc.claim || "Fact check review"}`;
+          link.textContent = `Source: ${fc.claim || "Fact check review"}`;
           itemDiv.appendChild(link);
         }
 
@@ -513,7 +555,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     } else {
       const emptyDiv = document.createElement("div");
       emptyDiv.className = "empty-state";
-      emptyDiv.textContent = "No existing third-party fact-check records found for this claim (Neutral 50/100 baseline applied).";
+      emptyDiv.textContent = "No matching third-party fact-check indexed for this claim (Neutral 50/100 baseline applied).";
       evidenceContainer.appendChild(emptyDiv);
     }
 
@@ -521,7 +563,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     const similarContainer = document.getElementById("similar-content-container");
     similarContainer.innerHTML = "";
 
-    const simData = res.module_results?.module_breakdowns?.similarity || {};
     if (simData.recycled_content) {
       const matchDiv = document.createElement("div");
       matchDiv.className = "evidence-item";
@@ -545,26 +586,32 @@ document.addEventListener("DOMContentLoaded", async () => {
       const p = document.createElement("p");
       p.style.marginTop = "4px";
       p.style.color = "var(--text-muted)";
-      p.textContent = `Matches previously recorded viral narrative${simData.earliest_matching_timestamp ? ` (First recorded: ${simData.earliest_matching_timestamp})` : ""}.`;
+      p.textContent = `Matches previously recorded narrative in historical corpus${simData.earliest_matching_timestamp ? ` (First recorded: ${simData.earliest_matching_timestamp})` : ""}.`;
       matchDiv.appendChild(p);
 
       similarContainer.appendChild(matchDiv);
     } else if (simData.similar_content_count > 0) {
       const matchDiv = document.createElement("div");
       matchDiv.className = "empty-state";
-      matchDiv.textContent = `Found ${simData.similar_content_count} related content references in the local knowledge corpus (Semantic text similarity: ${Math.round((simData.text_similarity || 0) * 100)}%).`;
+      matchDiv.textContent = `Evaluated against current 3-item local historical corpus (Max semantic similarity: ${Math.round((simData.text_similarity || 0) * 100)}%).`;
       similarContainer.appendChild(matchDiv);
     } else {
       const emptyDiv = document.createElement("div");
       emptyDiv.className = "empty-state";
-      emptyDiv.textContent = "No matching older or recycled viral narratives found in historical corpus (High originality).";
+      emptyDiv.textContent = "No matching older or recycled narratives found in current 3-item local corpus.";
       similarContainer.appendChild(emptyDiv);
     }
   }
 
-  function updateModuleScore(moduleName, score) {
+  function updateModuleScore(moduleName, score, statusText) {
     const textEl = document.getElementById(`score-${moduleName}`);
     const barEl = document.getElementById(`bar-${moduleName}`);
+    const statusEl = document.getElementById(`status-${moduleName}`);
+
+    if (statusEl && statusText) {
+      statusEl.innerText = `Status: ${statusText}`;
+    }
+
     if (score != null) {
       const rounded = Math.round(score);
       textEl.innerText = `${rounded}/100`;
