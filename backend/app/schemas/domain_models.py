@@ -124,19 +124,19 @@ class Comment(BaseModel):
 
 class SocialMediaPost(BaseModel):
     """Target social media post entity."""
-    post_id: str | None = Field(None, description="Platform unique post ID")
+    post_id: str | None = Field(None, max_length=200, description="Platform unique post ID")
     platform: str = Field(
-        default="generic", description="Origin platform (e.g. twitter, reddit, facebook, generic)"
+        default="generic", max_length=50, description="Origin platform (e.g. twitter, reddit, facebook, generic)"
     )
     text: str = Field(..., min_length=1, max_length=50000, description="Main text body of the post")
-    hashtags: list[str] = Field(default_factory=list, description="List of hashtags")
-    media: list[Media] = Field(default_factory=list, description="List of attached media entities")
+    hashtags: list[str] = Field(default_factory=list, max_length=100, description="List of hashtags")
+    media: list[Media] = Field(default_factory=list, max_length=50, description="List of attached media entities")
     timestamp: datetime | None = Field(None, description="Post publication timestamp")
     author: UserProfile | None = Field(
         None, description="Author/user profile information"
     )
     comments: list[Comment] = Field(
-        default_factory=list, description="Extracted comments associated with the post"
+        default_factory=list, max_length=200, description="Extracted comments associated with the post"
     )
 
     @field_validator("platform")
@@ -157,12 +157,28 @@ class SocialMediaPost(BaseModel):
 
 class AnalysisRequest(BaseModel):
     """Top-level verification request model."""
-    request_id: str | None = Field(None, description="Optional client-provided correlation ID")
+    request_id: str | None = Field(None, max_length=128, description="Optional client-provided correlation ID")
     post: SocialMediaPost = Field(..., description="The social media post to verify")
     custom_weights: dict[str, float] | None = Field(
         None,
         description="Optional custom weights override for M1-M4 (must sum to 1.0)",
     )
+
+    @field_validator("custom_weights")
+    @classmethod
+    def validate_custom_weights(cls, v: dict[str, float] | None) -> dict[str, float] | None:
+        if v is None:
+            return None
+        valid_keys = {
+            "comment_analysis", "evidence_verification", "user_behaviour", "similar_content",
+            "m1_comments", "m2_evidence", "m3_user_behaviour", "m4_similar_content"
+        }
+        for k, val in v.items():
+            if k not in valid_keys:
+                raise ValueError(f"Custom weight key '{k}' is invalid. Allowed keys: {valid_keys}")
+            if val < 0.0 or val > 1.0:
+                raise ValueError(f"Weight {k}={val} must be between 0.0 and 1.0")
+        return v
 
 
 # ==============================================================================

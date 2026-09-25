@@ -20,8 +20,18 @@
       <div id="backend-status-badge" class="badge-status badge-connecting" title="FastAPI Verification Backend Status">Connecting...</div>
     </header>
 
+    <!-- Operation Mode Switcher: Real Post Mode vs Demo Mode -->
+    <div class="mode-selector" role="tablist" aria-label="Operation Mode">
+      <button id="mode-real-btn" class="mode-tab active" role="tab" aria-selected="true" title="Verify live post currently open in browser tab">
+        <span>🌐</span> Real Post Mode
+      </button>
+      <button id="mode-demo-btn" class="mode-tab demo-active" role="tab" aria-selected="false" title="Switch to academic test scenarios">
+        <span>🧪</span> Demo Mode
+      </button>
+    </div>
+
     <!-- Quick Test Scenarios (Academic Demo Toolbar) -->
-    <div class="preset-toolbar">
+    <div id="demo-presets-container" class="preset-toolbar hidden">
       <span class="preset-label">Test Scenarios:</span>
       <div class="preset-buttons">
         <button id="preset-real-btn" class="preset-btn preset-btn-real" title="Load sample verified post">Likely Real</button>
@@ -42,32 +52,63 @@
       <textarea id="post-text-input" class="text-input" rows="3" placeholder="Enter social media post text, extract from page, or select a test scenario above..."></textarea>
       
       <div class="meta-row">
-        <span id="detected-platform" class="meta-chip">Platform: TWITTER</span>
-        <span id="detected-author" class="meta-chip">Author: @page_author</span>
+        <span id="detected-platform" class="meta-chip">Platform: --</span>
+        <span id="detected-author" class="meta-chip">Author: --</span>
         <span id="detected-comments-count" class="meta-chip">Comments: 0</span>
         <span id="detected-media-count" class="meta-chip">Media: 0</span>
+        <span id="detected-engagement" class="meta-chip hidden">Likes: 0</span>
       </div>
 
-      <button id="run-verify-btn" class="btn-verify">Analyze & Verify Content</button>
+      <button id="run-verify-btn" class="btn-verify">Analyze &amp; Verify Content</button>
     </div>
 
-    <!-- Loading State -->
+    <!-- Loading State with Real Sequential Step Progression -->
     <div id="loading-spinner" class="spinner-container hidden" aria-live="polite">
       <div class="spinner"></div>
-      <p class="spinner-text">Executing Multi-Modal Verification Pipeline...</p>
-      <p class="spinner-subtext">Evaluating evidence, user graphs, comments & neural similarity</p>
+      <p id="loading-stage-label" class="spinner-text">Extracting post...</p>
+      <div class="loading-steps-track">
+        <div id="step-1" class="step-pill active"><span class="step-num">1</span> Extracting post</div>
+        <div id="step-2" class="step-pill"><span class="step-num">2</span> Checking claims</div>
+        <div id="step-3" class="step-pill"><span class="step-num">3</span> Analysing comments</div>
+        <div id="step-4" class="step-pill"><span class="step-num">4</span> Checking similar content</div>
+        <div id="step-5" class="step-pill"><span class="step-num">5</span> Generating result</div>
+      </div>
     </div>
 
-    <!-- Error State -->
+    <!-- Categorized Error State -->
     <div id="error-box" class="error-box hidden" role="alert">
-      <div class="error-title">Verification Error</div>
+      <div class="error-header-row">
+        <span id="error-category-tag" class="error-category-tag">Error</span>
+        <div id="error-box-title" class="error-title">Verification Error</div>
+      </div>
       <div id="error-message" class="error-message">Unable to reach local FastAPI service.</div>
+      <div id="error-action-hint" class="error-action-hint hidden"></div>
     </div>
 
     <!-- Results Panel (Structured Layout) -->
     <main id="results-container" class="results-container hidden">
       
-      <!-- Primary Classification Banner -->
+      <!-- 1. Post Information Section -->
+      <section class="section-block post-info-card" aria-label="Analyzed Post Information">
+        <div class="post-info-header">
+          <div class="post-platform-group">
+            <span id="result-platform-badge" class="platform-badge">TWITTER</span>
+            <span id="result-author-handle" class="post-author-name">@author</span>
+          </div>
+          <a id="result-post-url" class="post-source-link" href="#" target="_blank" rel="noopener noreferrer" title="Open original post in new browser tab">Original Link &rarr;</a>
+        </div>
+        <p id="result-post-text" class="post-content-preview">Post text preview...</p>
+        <div class="post-info-meta-row">
+          <span id="result-comment-count" class="info-chip">Comments: 0</span>
+          <span id="result-likes-count" class="info-chip">Likes: 0</span>
+          <span id="result-shares-count" class="info-chip hidden">Shares: 0</span>
+          <span id="result-media-count" class="info-chip">Media: 0</span>
+        </div>
+      </section>
+
+      <div class="section-divider"></div>
+
+      <!-- 2. Main Result: Primary Classification Banner -->
       <section class="verdict-card" aria-label="Verification Summary">
         <div class="verdict-row">
           <div class="verdict-classification">
@@ -85,6 +126,7 @@
 
         <div class="divider-subtle"></div>
 
+        <!-- 3. AI Detector (Decoupled Orthogonal Evaluation) -->
         <div class="ai-metric-row">
           <div class="ai-label-col">
             <span class="ai-heading">AI Generation Probability</span>
@@ -96,15 +138,15 @@
 
       <div class="section-divider"></div>
 
-      <!-- Module Scores Section -->
+      <!-- 4. Module Results Section -->
       <section class="section-block" aria-label="Module Scores">
-        <h2 class="section-title">MODULE SCORES</h2>
+        <h2 class="section-title">MODULE RESULTS</h2>
         
         <div class="module-list">
           <div class="module-row">
             <div class="module-info">
               <span class="module-name">Comment Analysis</span>
-              <span class="module-desc">Duplicate spam, sentiment & burst patterns</span>
+              <span class="module-desc">Duplicate spam, sentiment &amp; burst patterns</span>
               <span id="status-comment" class="module-status-tag">Status: Pending</span>
             </div>
             <div class="module-value-col">
@@ -116,7 +158,7 @@
           <div class="module-row">
             <div class="module-info">
               <span class="module-name">Evidence Verification</span>
-              <span class="module-desc">Google Fact Check & publisher credibility</span>
+              <span class="module-desc">Google Fact Check &amp; publisher credibility</span>
               <span id="status-evidence" class="module-status-tag">Status: Pending</span>
             </div>
             <div class="module-value-col">
@@ -128,7 +170,7 @@
           <div class="module-row">
             <div class="module-info">
               <span class="module-name">User Behaviour</span>
-              <span class="module-desc">Account age, velocity & anomaly scoring</span>
+              <span class="module-desc">Account age, velocity &amp; anomaly scoring</span>
               <span id="status-behaviour" class="module-status-tag">Status: Pending</span>
             </div>
             <div class="module-value-col">
@@ -140,7 +182,7 @@
           <div class="module-row">
             <div class="module-info">
               <span class="module-name">Similar Content</span>
-              <span class="module-desc">Recycled hoaxes, pHash & S-BERT matching</span>
+              <span class="module-desc">Recycled hoaxes, pHash &amp; S-BERT matching</span>
               <span id="status-similarity" class="module-status-tag">Status: Pending</span>
             </div>
             <div class="module-value-col">
@@ -153,30 +195,53 @@
 
       <div class="section-divider"></div>
 
-      <!-- Why This Result? (XAI) -->
+      <!-- 5. Explanation: Why did Social Guard give this result? -->
       <section class="section-block" aria-label="Explanation of Verdict">
-        <h2 class="section-title">WHY THIS RESULT?</h2>
+        <h2 class="section-title">WHY DID SOCIAL GUARD GIVE THIS RESULT?</h2>
         <div id="explanation-summary" class="summary-text">
           Evaluating analytical evidence...
         </div>
         <ul id="reasons-list" class="reasons-list">
-          <!-- Populated dynamically with backend factors -->
+          <!-- Populated dynamically with backend XAI factors -->
         </ul>
       </section>
 
       <div class="section-divider"></div>
 
-      <!-- Evidence Section -->
-      <section class="section-block" aria-label="Fact Check Evidence">
-        <h2 class="section-title">EVIDENCE</h2>
-        <div id="evidence-container" class="evidence-box">
-          <!-- Fact checks or 'No existing fact-check found' -->
+      <!-- 5.5 Community & Comment Fact-Check Section -->
+      <section id="comment-factcheck-section" class="section-block" aria-label="Community Fact-Check">
+        <h2 class="section-title">COMMUNITY &amp; COMMENT FACT-CHECK</h2>
+        <div id="comment-factcheck-box" class="comment-factcheck-box">
+          <div class="comment-factcheck-header">
+            <span id="comment-verdict-badge" class="comment-verdict-badge verdict-uncertain">NO COMMENTS</span>
+            <span id="comment-ratio-stat" class="comment-ratio-stat"></span>
+          </div>
+          <p id="comment-factcheck-summary" class="comment-factcheck-summary">Analyzing comment veracity signals...</p>
+          <div id="debunking-comments-list" class="debunking-comments-list hidden"></div>
         </div>
       </section>
 
       <div class="section-divider"></div>
 
-      <!-- Similar Content Section -->
+      <!-- 6. Evidence Section: Claims Checked, Fact-Check Result, Publisher, Source Link -->
+      <section class="section-block" aria-label="Fact Check Evidence">
+        <h2 class="section-title">EVIDENCE &amp; FACT-CHECKS</h2>
+        
+        <!-- Claims Checked Subsection -->
+        <div id="claims-checked-block" class="claims-checked-box hidden">
+          <span class="sub-label">Claims Checked:</span>
+          <ul id="claims-checked-list" class="claims-list"></ul>
+        </div>
+
+        <!-- Matched Fact-Checks Container -->
+        <div id="evidence-container" class="evidence-box">
+          <!-- Fact checks or 'No matching fact-check found' -->
+        </div>
+      </section>
+
+      <div class="section-divider"></div>
+
+      <!-- 7. Similar Content Section -->
       <section class="section-block" aria-label="Similar Content Analysis">
         <h2 class="section-title">SIMILAR CONTENT</h2>
         <div id="similar-content-container" class="similar-box">

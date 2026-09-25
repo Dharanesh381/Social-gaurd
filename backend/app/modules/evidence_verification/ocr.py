@@ -32,17 +32,17 @@ class TesseractOCRService(BaseOCRService):
             import pytesseract
             from PIL import Image
 
-            async with httpx.AsyncClient(timeout=self.timeout) as client:
-                resp = await client.get(image_url)
-                if resp.status_code != 200:
-                    logger.warning("Failed to fetch image from %s (status %d)", image_url, resp.status_code)
-                    return None
+            from app.utils.security import safe_fetch_image_bytes
 
-                img = Image.open(io.BytesIO(resp.content))
-                extracted_text = pytesseract.image_to_string(img)
-                cleaned = extracted_text.strip()
-                logger.info("OCR extracted %d characters from image %s", len(cleaned), image_url[:40])
-                return cleaned if cleaned else None
+            raw_bytes = await safe_fetch_image_bytes(image_url, timeout=self.timeout)
+            if not raw_bytes:
+                return None
+
+            img = Image.open(io.BytesIO(raw_bytes))
+            extracted_text = pytesseract.image_to_string(img)
+            cleaned = extracted_text.strip()
+            logger.info("OCR extracted %d characters from image %s", len(cleaned), image_url[:40])
+            return cleaned if cleaned else None
 
         except ImportError:
             logger.debug("pytesseract / PIL not installed or configured. Skipping OCR.")

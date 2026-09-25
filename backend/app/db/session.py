@@ -20,11 +20,18 @@ Base = declarative_base()
 # Defaults to SQLite async for local testing/dev if PostgreSQL is not active
 _db_url = getattr(settings, "DATABASE_URL", "sqlite+aiosqlite:///./social_guard.db")
 
+_engine_kwargs = {
+    "echo": False,
+    "future": True,
+}
+if "sqlite" in _db_url:
+    _engine_kwargs["connect_args"] = {"check_same_thread": False}
+else:
+    _engine_kwargs["pool_pre_ping"] = True
+
 engine = create_async_engine(
     _db_url,
-    echo=False,
-    future=True,
-    pool_pre_ping=True,
+    **_engine_kwargs,
 )
 
 AsyncSessionLocal = async_sessionmaker(

@@ -145,3 +145,35 @@ def test_near_duplicate_semantic_bot_farm(analyzer: CommentAnalyzer):
     assert result["metrics"]["average_similarity"] > 0.75
     assert "SUSPICIOUS_SEMANTIC_COORDINATION" in result["flags"]
     assert result["comment_score"] < 75.0
+
+
+def test_comment_fact_check_community_debunk(analyzer: CommentAnalyzer):
+    """Test that comments debunking a claim are detected and penalize the comment score."""
+    comments = [
+        Comment(text="This is completely fake news and already debunked by Snopes!"),
+        Comment(text="Community notes needed: this video is a staged CGI hoax from 2019."),
+        Comment(text="False information, please stop spreading this scam."),
+        Comment(text="Interesting article though."),
+    ]
+    result = analyzer.analyze(comments)
+    assert result["fact_check"]["verdict"] == "DEBUNKED_BY_COMMUNITY"
+    assert result["fact_check"]["debunk_ratio"] >= 0.50
+    assert result["fact_check"]["has_fact_checker_reference"] is True
+    assert "COMMENTS_DEBUNK_CLAIM" in result["flags"]
+    assert "FACT_CHECK_CITED_IN_COMMENTS" in result["flags"]
+    assert result["comment_score"] <= 35.0
+
+
+def test_comment_fact_check_community_support(analyzer: CommentAnalyzer):
+    """Test that comments confirming and verifying a claim are detected and rewarded."""
+    comments = [
+        Comment(text="This was verified and confirmed by Reuters today."),
+        Comment(text="Legit and accurate reporting from official sources."),
+        Comment(text="I checked the primary research paper, this is true."),
+    ]
+    result = analyzer.analyze(comments)
+    assert result["fact_check"]["verdict"] == "SUPPORTED_BY_COMMENTS"
+    assert result["fact_check"]["support_ratio"] >= 0.60
+    assert "COMMENTS_VERIFY_CLAIM" in result["flags"]
+    assert result["comment_score"] >= 80.0
+

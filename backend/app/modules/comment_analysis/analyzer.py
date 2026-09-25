@@ -1,5 +1,4 @@
-"""Module 1: Comment Analysis Engine implementation."""
-
+import re
 from typing import Any
 
 from app.modules.comment_analysis.preprocessing import (
@@ -16,15 +15,39 @@ from app.modules.comment_analysis.temporal import (
 from app.schemas.domain_models import Comment
 from app.utils.logging import logger
 
+# Crowdsourced debunking & skepticism patterns in social media comments
+DEBUNK_REGEX = re.compile(
+    r"\b(fake|fake\s*news|debunked|debunk|false|hoax|scam|scammer|bullshit|bs|misleading|"
+    r"not\s*true|untrue|fabricated|disinformation|misinformation|lie|lies|lying|staged|"
+    r"cgi|deepfake|ai\s*generated|photoshop(ped)?|clickbait|phishing|manipulated)\b|"
+    r"\b(community\s*note)\b|"
+    r"(?:debunked|refuted|fact-checked)\s+by\s+(?:snopes|reuters|politifact|ap\s*news|factcheck|community\s*note)|"
+    r"\b(out\s*of\s*context|old\s*(video|pic|photo|news)|recycled|from\s*20\d\d)\b",
+    re.IGNORECASE,
+)
+
+FACT_CHECKER_REGEX = re.compile(
+    r"\b(snopes|factcheck|fact-check|politifact|community\s*note|lead\s*stories|full\s*fact|altnews|pibfactcheck)\b",
+    re.IGNORECASE,
+)
+
+# Negations that might precede debunk words (e.g. "not fake", "isn't a hoax")
+NEGATION_DEBUNK_REGEX = re.compile(
+    r"\b(not|isn't|is\s+not|wasn't|was\s+not|aren't|are\s+not|ain't|no)\s+(fake|a\s+hoax|a\s+scam|a\s+lie|false)\b",
+    re.IGNORECASE,
+)
+
+# Support / confirmation patterns in comments
+SUPPORT_REGEX = re.compile(
+    r"\b(verified|confirmed|true|legit|factually\s*correct|real\s*deal|accurate|"
+    r"official\s*source|backed\s*by|credible|proven\s*true)\b",
+    re.IGNORECASE,
+)
+
 
 class CommentAnalyzer:
     """Module 1: Analyzes comment sentiment cohesion, duplicate spam, emoji manipulation,
-
-    and temporal bursts to produce a calibrated Comment Score (0-100).
-
-    IMPORTANT:
-    Suspicious comment activity indicates inorganic discussion, astroturfing, or brigading;
-    it does NOT definitively prove the underlying factual claim is fake.
+    temporal bursts, and crowdsourced fact-checking signals to produce a calibrated Comment Score (0-100).
     """
 
     def __init__(
@@ -35,28 +58,68 @@ class CommentAnalyzer:
         self.similarity_threshold = similarity_threshold
         self.zscore_threshold = zscore_threshold
 
+    def evaluate_comment_fact_checking(self, comments: list[Comment]) -> dict[str, Any]:
+        """Analyze comment text for crowdsourced fact-checking, skepticism, and debunking signals."""
+        debunking_comments: list[str] = []
+        supporting_comments: list[str] = []
+        extracted_claims: list[str] = []
+        has_fact_checker_reference = False
+
+        for c in comments:
+            txt = (c.text or "").strip()
+            if not txt:
+                continue
+
+            # Check for negation of debunking ("not fake")
+            is_negated = bool(NEGATION_DEBUNK_REGEX.search(txt))
+            is_debunking = bool(DEBUNK_REGEX.search(txt)) and not is_negated
+            is_supporting = bool(SUPPORT_REGEX.search(txt)) and not is_debunking
+
+            if is_debunking:
+                debunking_comments.append(txt)
+                if any(k in txt.lower() for k in ["snopes", "factcheck", "fact-check", "reuters", "politifact", "community note"]):
+                    has_fact_checker_reference = True
+                # Extract potential debunking claim/context
+                cleaned_claim = re.sub(r"https?://\S+", "", txt).strip()
+                if len(cleaned_claim.split()) >= 3:
+                    extracted_claims.append(cleaned_claim[:120])
+            elif is_supporting:
+                supporting_comments.append(txt)
+
+        total = len(comments)
+        debunk_count = len(debunking_comments)
+        support_count = len(supporting_comments)
+        debunk_ratio = round(debunk_count / total, 3) if total > 0 else 0.0
+        support_ratio = round(support_count / total, 3) if total > 0 else 0.0
+
+        # Determine comment fact check verdict
+        if debunk_ratio >= 0.25 or (total <= 3 and debunk_count >= 1):
+            verdict = "DEBUNKED_BY_COMMUNITY"
+            summary = f"Strong community debunking detected: {debunk_count} of {total} comments refute this claim as false, fake, or a hoax."
+        elif debunk_count > 0:
+            verdict = "CONTESTED_BY_COMMENTS"
+            summary = f"Community skepticism detected: {debunk_count} of {total} comments question or contest the credibility of this post."
+        elif support_ratio >= 0.40:
+            verdict = "SUPPORTED_BY_COMMENTS"
+            summary = f"Comments generally confirm or corroborate this post ({support_count} of {total} supportive)."
+        else:
+            verdict = "ORGANIC_DISCUSSION"
+            summary = f"Comments represent standard discussion ({total} comments analyzed)."
+
+        return {
+            "verdict": verdict,
+            "debunk_ratio": debunk_ratio,
+            "support_ratio": support_ratio,
+            "debunk_count": debunk_count,
+            "support_count": support_count,
+            "has_fact_checker_reference": has_fact_checker_reference,
+            "debunking_comments": debunking_comments[:5],
+            "extracted_comment_claims": extracted_claims[:3],
+            "summary": summary,
+        }
+
     def analyze(self, comments: list[Comment]) -> dict[str, Any]:
-        """Execute full Comment Analysis pipeline.
-
-        Pipeline:
-        Comments -> Preprocessing -> S-BERT Semantic Similarity -> Exact / Near Duplicate Detection
-                 -> Emoji Entropy & Distribution -> Temporal Burst Analysis -> Calibrated Scoring
-
-        Returns:
-            Dict conforming to:
-            {
-                "comment_score": float (0-100),
-                "metrics": {
-                    "comment_count": int,
-                    "duplicate_ratio": float,
-                    "average_similarity": float,
-                    "emoji_ratio": float,
-                    "temporal_anomaly_score": float,
-                    ...
-                },
-                "flags": List[str]
-            }
-        """
+        """Execute full Comment Analysis pipeline."""
         flags: list[str] = []
         n_comments = len(comments)
 
@@ -76,6 +139,19 @@ class CommentAnalyzer:
                     "emoji_entropy": 0.0,
                     "temporal_anomaly_score": 0.0,
                     "average_comments_per_minute": 0.0,
+                    "debunk_ratio": 0.0,
+                    "support_ratio": 0.0,
+                },
+                "fact_check": {
+                    "verdict": "NO_COMMENTS",
+                    "debunk_ratio": 0.0,
+                    "support_ratio": 0.0,
+                    "debunk_count": 0,
+                    "support_count": 0,
+                    "has_fact_checker_reference": False,
+                    "debunking_comments": [],
+                    "extracted_comment_claims": [],
+                    "summary": "No comments available to evaluate crowdsourced fact-checking or discussion signals.",
                 },
                 "flags": ["NO_COMMENTS_AVAILABLE"],
             }
@@ -87,7 +163,6 @@ class CommentAnalyzer:
         timestamps = [c.timestamp for c in comments if c.timestamp is not None]
 
         cleaned_texts_embedding = [clean_text_for_embedding(t) for t in raw_texts]
-        # Filter out purely blank items after cleaning
         valid_embedding_texts = [t for t in cleaned_texts_embedding if t]
 
         exact_norm_texts = [normalize_text_for_exact_match(t) for t in raw_texts]
@@ -104,7 +179,6 @@ class CommentAnalyzer:
         # ----------------------------------------------------------------------
         # Step 3: Semantic Similarity & Near-Duplicate Analysis (S-BERT)
         # ----------------------------------------------------------------------
-        # Edge Case 2: 1 comment
         if len(valid_embedding_texts) <= 1:
             similarity_metrics = {
                 "average_similarity": 0.0,
@@ -128,7 +202,6 @@ class CommentAnalyzer:
                 }
                 flags.append("SIMILARITY_CALCULATION_FALLBACK")
 
-        # Total combined duplicate ratio (maximum of exact and near duplicate)
         duplicate_ratio = max(
             exact_duplicate_ratio,
             similarity_metrics["near_duplicate_comment_ratio"],
@@ -148,7 +221,21 @@ class CommentAnalyzer:
         )
 
         # ----------------------------------------------------------------------
-        # Step 6: Flag Generation
+        # Step 6: Comment Fact-Checking & Crowdsourced Stance Analysis
+        # ----------------------------------------------------------------------
+        fact_check_eval = self.evaluate_comment_fact_checking(comments)
+        if fact_check_eval["verdict"] == "DEBUNKED_BY_COMMUNITY":
+            flags.append("COMMENTS_DEBUNK_CLAIM")
+        elif fact_check_eval["verdict"] == "CONTESTED_BY_COMMENTS":
+            flags.append("COMMENTS_CONTEST_CLAIM")
+        elif fact_check_eval["verdict"] == "SUPPORTED_BY_COMMENTS":
+            flags.append("COMMENTS_VERIFY_CLAIM")
+
+        if fact_check_eval["has_fact_checker_reference"]:
+            flags.append("FACT_CHECK_CITED_IN_COMMENTS")
+
+        # ----------------------------------------------------------------------
+        # Step 7: Flag Generation
         # ----------------------------------------------------------------------
         if duplicate_ratio >= 0.40:
             flags.append("HIGH_DUPLICATE_COMMENT_RATIO")
@@ -168,31 +255,42 @@ class CommentAnalyzer:
             flags.append("SINGLE_COMMENT_ONLY")
 
         # ----------------------------------------------------------------------
-        # Step 7: Calibrated Comment Score Computation (0 - 100)
-        #
-        # High Comment Score (80-100) = Healthy, diverse, organic discussion.
-        # Low Comment Score (0-39)   = High repetition, bot farm templates, inorganic burst.
+        # Step 8: Calibrated Comment Score Computation (0 - 100)
         # ----------------------------------------------------------------------
         if n_comments == 1:
-            comment_score = 65.0  # Slightly above neutral for single organic comment
+            if fact_check_eval["verdict"] == "DEBUNKED_BY_COMMUNITY":
+                comment_score = 25.0
+            elif fact_check_eval["verdict"] == "SUPPORTED_BY_COMMENTS":
+                comment_score = 80.0
+            else:
+                comment_score = 65.0
         else:
-            # Baseline is 100 points
             score = 100.0
 
-            # Penalty 1: Duplicate / Copypasta Penalty (up to 40 points deduction)
-            # duplicate_ratio of 50% deducts 25 points, 100% deducts 40 points
+            # Penalty 1: Duplicate / Copypasta Penalty (up to 40 points)
             score -= duplicate_ratio * 40.0
 
-            # Penalty 2: Overly high semantic similarity / bot coordination (up to 20 points)
+            # Penalty 2: Bot coordination semantic similarity (up to 20 points)
             if similarity_metrics["average_similarity"] > 0.55:
                 sim_excess = (similarity_metrics["average_similarity"] - 0.55) / 0.45
                 score -= sim_excess * 20.0
 
-            # Penalty 3: Temporal burst / brigading (up to 25 points)
+            # Penalty 3: Temporal burst (up to 25 points)
             score -= temporal_metrics["temporal_anomaly_score"] * 25.0
 
             # Penalty 4: Excessive emoji spam (up to 15 points)
             score -= emoji_metrics["excessive_emoji_ratio"] * 15.0
+
+            # Penalty 5 / Reward: Comment Fact Check Stance
+            if fact_check_eval["debunk_ratio"] > 0:
+                debunk_penalty = min(70.0, fact_check_eval["debunk_ratio"] * 85.0)
+                score -= debunk_penalty
+                if fact_check_eval["verdict"] == "DEBUNKED_BY_COMMUNITY":
+                    score = min(score, 35.0)
+                elif fact_check_eval["verdict"] == "CONTESTED_BY_COMMENTS":
+                    score = min(score, 55.0)
+            elif fact_check_eval["support_ratio"] >= 0.40:
+                score = min(100.0, score + 10.0)
 
             comment_score = round(max(0.0, min(100.0, score)), 2)
 
@@ -209,13 +307,17 @@ class CommentAnalyzer:
             "average_comments_per_minute": temporal_metrics["average_comments_per_minute"],
             "max_comments_per_minute": temporal_metrics["max_comments_per_minute"],
             "zscore_max": temporal_metrics["zscore_max"],
+            "debunk_ratio": fact_check_eval["debunk_ratio"],
+            "support_ratio": fact_check_eval["support_ratio"],
         }
 
         return {
             "comment_score": comment_score,
             "metrics": metrics_summary,
+            "fact_check": fact_check_eval,
             "flags": flags,
         }
 
 
 comment_analyzer = CommentAnalyzer()
+

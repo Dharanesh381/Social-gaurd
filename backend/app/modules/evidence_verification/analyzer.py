@@ -1,4 +1,4 @@
-"""Module 2: Evidence-Based Verification Engine."""
+"""Module 2: Evidence-Based Verification Engine (Phase 4)."""
 
 from typing import Any
 
@@ -45,6 +45,8 @@ class EvidenceVerifier:
         self,
         post_text: str,
         image_urls: list[str] | None = None,
+        comments: list[Any] | None = None,
+        comment_claims: list[str] | None = None,
     ) -> dict[str, Any]:
         """Execute full Evidence-Based Verification pipeline.
 
@@ -61,6 +63,7 @@ class EvidenceVerifier:
                 "diagnostics": Dict[str, Any]
             }
         """
+        import re
         flags: list[str] = []
         image_urls = image_urls or []
 
@@ -82,11 +85,18 @@ class EvidenceVerifier:
             flags.append("OCR_TEXT_INCORPORATED")
 
         # ----------------------------------------------------------------------
-        # Step 2: Claim Extraction
+        # Step 2: Claim Extraction from Post and Comments
         # ----------------------------------------------------------------------
         extracted_claims = self.extractor.extract_claims(combined_text)
 
-        if not extracted_claims:
+        # Incorporate comment claims / crowdsourced debunking targets
+        additional_queries: list[str] = list(comment_claims or [])
+        if comments and hasattr(self.extractor, "extract_comment_claims"):
+            additional_queries.extend(self.extractor.extract_comment_claims(comments))
+
+        all_candidate_claims = list(dict.fromkeys(extracted_claims + additional_queries))
+
+        if not all_candidate_claims:
             return {
                 "evidence_score": 50.0,
                 "status": "NO_FACT_CHECK_FOUND",
@@ -94,14 +104,14 @@ class EvidenceVerifier:
                 "fact_checks": [],
                 "sources": [],
                 "flags": ["NO_VERIFIABLE_CLAIMS_DETECTED"],
-                "explanation": "No verifiable factual claims could be isolated from the post content (Neutral 50/100 baseline).",
+                "explanation": "No verifiable claim found. Post content contains no verifiable factual claims (Neutral 50/100 baseline).",
                 "diagnostics": {
                     "fact_check_status": "NO_CLAIM_DETECTED",
                     "query_used": [],
                     "result_count": 0,
                     "source_count": 0,
-                    "normalization_status": "NO_CLAIMS"
-                }
+                    "normalization_status": "NO_CLAIMS",
+                },
             }
 
         # ----------------------------------------------------------------------
@@ -110,72 +120,145 @@ class EvidenceVerifier:
         all_matched_reviews: list[dict[str, Any]] = []
         sources_info: list[dict[str, Any]] = []
         queries_attempted: list[str] = []
+        seen_review_urls: set[str] = set()
         api_status_observed = "SUCCESS"
 
-        for claim_query in extracted_claims:
-            queries_attempted.append(claim_query)
-            api_resp = await self.api_client.search_claims(query=claim_query)
-            status_code = api_resp.get("status")
+        for claim in all_candidate_claims:
+            # Generate query variations (e.g. full statement and concise keyword keyphrases)
+            search_variations = [claim]
+            if hasattr(self.extractor, "extract_search_queries"):
+                search_variations = self.extractor.extract_search_queries(claim)
 
-            if status_code == "API_KEY_MISSING":
-                api_status_observed = "API_KEY_MISSING"
-                if "GOOGLE_FACT_CHECK_API_KEY_NOT_CONFIGURED" not in flags:
-                    flags.append("GOOGLE_FACT_CHECK_API_KEY_NOT_CONFIGURED")
-            elif status_code == "RATE_LIMITED":
-                api_status_observed = "RATE_LIMITED"
-                flags.append("FACT_CHECK_API_RATE_LIMITED")
-            elif status_code == "TIMEOUT":
-                api_status_observed = "TIMEOUT"
-                flags.append("FACT_CHECK_API_TIMEOUT")
-            elif status_code == "SUCCESS":
-                raw_claims = api_resp.get("claims", [])
-                for c in raw_claims:
-                    claim_text = c.get("text", "")
-                    claimant = c.get("claimant", "")
-                    reviews = c.get("claimReview", [])
-                    for r in reviews:
-                        publisher = r.get("publisher", {}).get("name", "Unknown Publisher")
-                        publisher_site = r.get("publisher", {}).get("site", "")
-                        raw_rating = r.get("textualRating", "")
-                        review_url = r.get("url", "")
+            found_for_this_claim = False
+            for claim_query in search_variations:
+                if claim_query in queries_attempted:
+                    continue
+                queries_attempted.append(claim_query)
 
-                        norm_score, category = normalize_fact_check_rating(raw_rating)
-                        src_credibility = compute_source_credibility(publisher, publisher_site)
+                api_resp = await self.api_client.search_claims(query=claim_query)
+                status_code = api_resp.get("status")
 
-                        match_item = {
-                            "claim": claim_text,
-                            "claimant": claimant,
-                            "publisher": publisher,
-                            "publisher_url": review_url,
-                            "raw_rating": raw_rating,
-                            "normalized_truth_score": norm_score,
-                            "rating_category": category,
-                            "source_credibility": src_credibility,
-                        }
-                        all_matched_reviews.append(match_item)
+                if status_code == "API_KEY_MISSING":
+                    api_status_observed = "API_KEY_MISSING"
+                    if "GOOGLE_FACT_CHECK_API_KEY_NOT_CONFIGURED" not in flags:
+                        flags.append("GOOGLE_FACT_CHECK_API_KEY_NOT_CONFIGURED")
+                    break
+                elif status_code == "RATE_LIMITED":
+                    api_status_observed = "RATE_LIMITED"
+                    flags.append("FACT_CHECK_API_RATE_LIMITED")
+                    break
+                elif status_code == "TIMEOUT":
+                    api_status_observed = "TIMEOUT"
+                    flags.append("FACT_CHECK_API_TIMEOUT")
+                elif status_code == "MALFORMED_RESPONSE":
+                    api_status_observed = "MALFORMED_RESPONSE"
+                    flags.append("FACT_CHECK_API_MALFORMED_RESPONSE")
+                elif status_code in ("API_ERROR", "CONNECTION_ERROR"):
+                    api_status_observed = status_code
+                    flags.append("FACT_CHECK_API_UNAVAILABLE")
+                elif status_code == "SUCCESS":
+                    raw_claims = api_resp.get("claims", [])
+                    if raw_claims:
+                        found_for_this_claim = True
+                        for c in raw_claims:
+                            claim_text = c.get("text", "")
+                            claimant = c.get("claimant", "")
+                            reviews = c.get("claimReview", [])
+                            for r in reviews:
+                                review_url = r.get("url", "")
+                                if review_url and review_url in seen_review_urls:
+                                    continue
+                                if review_url:
+                                    seen_review_urls.add(review_url)
 
-                        sources_info.append({
-                            "publisher": publisher,
-                            "site": publisher_site,
-                            "credibility_weight": src_credibility,
-                            "url": review_url,
-                        })
+                                publisher = r.get("publisher", {}).get("name", "Unknown Publisher")
+                                publisher_site = r.get("publisher", {}).get("site", "")
+                                raw_rating = r.get("textualRating", "")
+
+                                norm_score, category = normalize_fact_check_rating(raw_rating)
+                                src_credibility = compute_source_credibility(publisher, publisher_site)
+
+                                match_item = {
+                                    "claim": claim_text,
+                                    "claimant": claimant,
+                                    "publisher": publisher,
+                                    "rating": raw_rating,
+                                    "raw_rating": raw_rating,
+                                    "source_url": review_url,
+                                    "publisher_url": review_url,
+                                    "normalized_evidence_score": round(norm_score * 100.0, 2),
+                                    "normalized_truth_score": norm_score,
+                                    "rating_category": category,
+                                    "source_credibility": src_credibility,
+                                }
+                                all_matched_reviews.append(match_item)
+
+                                sources_info.append({
+                                    "publisher": publisher,
+                                    "site": publisher_site,
+                                    "credibility_weight": src_credibility,
+                                    "url": review_url,
+                                    "source_url": review_url,
+                                })
+
+                # If we found reviews for the primary query, avoid redundant secondary requests
+                if found_for_this_claim:
+                    break
 
         # ----------------------------------------------------------------------
         # Step 4: Decision Status and Evidence Score Calculation
         # ----------------------------------------------------------------------
         if not all_matched_reviews:
             status = "NO_FACT_CHECK_FOUND"
-            if api_status_observed == "API_KEY_MISSING":
+            evidence_score = 50.0
+
+            # Evaluate linguistic credibility signals when unindexed in fact check DB
+            clean_post = post_text or ""
+            is_clickbait = bool(
+                re.search(
+                    r"\b(miracle\s+cure|secret\s+cure|100%\s+cure|shocking\s+truth|"
+                    r"they\s+don't\s+want\s+you\s+to\s+know|share\s+before\s+deleted|"
+                    r"government\s+secret|poisoning\s+the\s+population|secretly\s+killed)\b",
+                    clean_post,
+                    re.IGNORECASE,
+                )
+                or (clean_post.count("!") >= 4)
+                or (len(clean_post) > 40 and sum(1 for ch in clean_post if ch.isupper()) / max(1, len(clean_post)) > 0.40)
+            )
+
+            is_journalistic = bool(
+                re.search(
+                    r"\b(according\s+to\s+reuters|associated\s+press\s+reports|published\s+in\s+nature|"
+                    r"peer-reviewed\s+study|official\s+press\s+release|bbc\s+news\s+reports)\b",
+                    clean_post,
+                    re.IGNORECASE,
+                )
+            )
+
+            if is_clickbait:
+                evidence_score = 40.0
+                flags.append("SENSATIONALIST_UNVERIFIED_CLAIM")
+                explanation = "No matching fact-checks found; content exhibits viral sensationalist and conspiratorial language markers (Calibrated baseline 40/100)."
+            elif is_journalistic:
+                evidence_score = 65.0
+                flags.append("JOURNALISTIC_ATTRIBUTION_DETECTED")
+                explanation = "No fact-check found; content cites verified institutional or journalistic attribution (Calibrated baseline 65/100)."
+            elif api_status_observed == "API_KEY_MISSING":
                 explanation = "Google Fact Check API key is not configured; evidence module assigned neutral baseline (50/100)."
+            elif api_status_observed == "TIMEOUT":
+                explanation = "Google Fact Check API request timed out; evidence module assigned neutral baseline (50/100)."
+            elif api_status_observed == "MALFORMED_RESPONSE":
+                explanation = "Google Fact Check API returned an invalid response; evidence module assigned neutral baseline (50/100)."
+            elif api_status_observed in ("CONNECTION_ERROR", "API_ERROR", "RATE_LIMITED"):
+                explanation = f"Google Fact Check API unavailable ({api_status_observed}); evidence module assigned neutral baseline (50/100)."
             else:
                 explanation = (
-                    "No matching third-party fact-check records found in Google Fact Check index. "
+                    "No matching fact-check found in Google Fact Check index. "
                     "Assigned neutral baseline score (50/100). Absence of fact-checks does not verify or disprove content."
                 )
 
             return {
-                "evidence_score": 50.0,
+                "evidence_score": evidence_score,
                 "status": status,
                 "claims": extracted_claims,
                 "fact_checks": [],
@@ -187,8 +270,8 @@ class EvidenceVerifier:
                     "query_used": queries_attempted,
                     "result_count": 0,
                     "source_count": 0,
-                    "normalization_status": "NEUTRAL_BASELINE"
-                }
+                    "normalization_status": "NEUTRAL_BASELINE",
+                },
             }
 
         # Weighted average of fact-check scores weighted by source credibility
@@ -238,8 +321,8 @@ class EvidenceVerifier:
                 "query_used": queries_attempted,
                 "result_count": len(all_matched_reviews),
                 "source_count": len(sources_info),
-                "normalization_status": f"WEIGHTED_{status}"
-            }
+                "normalization_status": f"WEIGHTED_{status}",
+            },
         }
 
 

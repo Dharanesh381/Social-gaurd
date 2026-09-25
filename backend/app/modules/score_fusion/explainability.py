@@ -149,10 +149,43 @@ class ExplainabilityEngine:
         comm_data = module_breakdowns.get("comments", {})
         comm_score = comm_data.get("score", 50.0)
         comm_metrics = comm_data.get("metrics", {})
+        comm_fact_check = comm_data.get("fact_check", {})
         comm_flags = comm_data.get("flags", [])
         n_comm = comm_metrics.get("comment_count", 0)
 
         comm_reasons = []
+
+        # Comment Fact-Checking & Crowdsourced Stance Signals
+        if comm_fact_check.get("verdict") == "DEBUNKED_BY_COMMUNITY":
+            neg_msg = f"Crowdsourced Community Debunking: Comments strongly refute this post ({comm_fact_check.get('debunk_count', 0)} comments identify it as false, fake, or a hoax)."
+            negative_factors.append({
+                "factor": neg_msg,
+                "module": "comment_analysis",
+                "impact_weight": 0.25,
+                "debunk_ratio": comm_fact_check.get("debunk_ratio", 0),
+            })
+            comm_reasons.append(neg_msg)
+        elif comm_fact_check.get("verdict") == "CONTESTED_BY_COMMENTS":
+            neg_msg = "Community Skepticism: Commenters actively question the veracity and factual context of this claim."
+            negative_factors.append({
+                "factor": neg_msg,
+                "module": "comment_analysis",
+                "impact_weight": 0.15,
+                "debunk_ratio": comm_fact_check.get("debunk_ratio", 0),
+            })
+            comm_reasons.append(neg_msg)
+        elif comm_fact_check.get("verdict") == "SUPPORTED_BY_COMMENTS":
+            pos_msg = f"Community Corroboration: Extracted comments corroborate and affirm the content."
+            positive_factors.append({
+                "factor": pos_msg,
+                "module": "comment_analysis",
+                "impact_weight": 0.15,
+                "support_ratio": comm_fact_check.get("support_ratio", 0),
+            })
+
+        if comm_fact_check.get("has_fact_checker_reference"):
+            confidence_notes.append("Comment discussion explicitly cites established fact-checking organisations or community notes.")
+
         if "HIGH_DUPLICATE_COMMENT_RATIO" in comm_flags or (n_comm >= 3 and comm_metrics.get("duplicate_ratio", 0) >= 0.35):
             neg_msg = f"Multiple repeated/near-duplicate comments were detected ({comm_metrics.get('duplicate_ratio', 0)*100:.0f}% duplicate ratio), indicating potential coordinated copypasta."
             negative_factors.append({

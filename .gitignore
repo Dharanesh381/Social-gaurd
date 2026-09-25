@@ -26,9 +26,19 @@ wheels/
 
 # Environment variables & secrets
 .env
-.env.local
+.env.*
+*.env
+backend/.env
 *.pem
 *.key
+
+# Local SQLite databases & journals
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+social_guard.db
 
 # IDEs & Editors
 .vscode/
@@ -56,3 +66,4 @@ datasets/raw/*
 !datasets/raw/.gitkeep
 datasets/processed/*
 !datasets/processed/.gitkeep
+!datasets/processed/evaluation_dataset.json

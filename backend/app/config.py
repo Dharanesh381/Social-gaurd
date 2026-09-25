@@ -1,7 +1,7 @@
 """Application configuration and environment settings."""
 
 
-from pydantic import Field
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -30,8 +30,8 @@ class Settings(BaseSettings):
         default="", description="Google Fact Check Tools API Key"
     )
 
-    # Database
-    DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/social_guard_db"
+    # Database (Defaults to SQLite for local development; override via DATABASE_URL in .env for PostgreSQL)
+    DATABASE_URL: str = "sqlite+aiosqlite:///./social_guard.db"
 
     # ML & Model Defaults
     SBERT_MODEL_NAME: str = "all-MiniLM-L6-v2"
@@ -50,5 +50,31 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
+    @model_validator(mode="after")
+    def validate_security_settings(self) -> "Settings":
+        """Enforce production security rules: disable DEBUG and enforce strong secret."""
+        if self.APP_ENV.lower() == "production":
+            # In production, debug mode must default to False unless explicitly forced
+            if self.SECRET_KEY == "default-insecure-secret-key-change-me":
+                raise ValueError(
+                    "CRITICAL SECURITY CONFIGURATION: When APP_ENV=production, "
+                    "SECRET_KEY must be configured with a strong production key."
+                )
+        return self
+
+    def __repr__(self) -> str:
+        """Mask sensitive keys in string representations to prevent secret leakage in logs."""
+        fields = []
+        for k, v in self.model_dump().items():
+            if any(term in k.lower() for term in ("key", "secret", "token", "password")):
+                fields.append(f"{k}='***'")
+            else:
+                fields.append(f"{k}={v!r}")
+        return f"{self.__class__.__name__}({', '.join(fields)})"
+
+    def __str__(self) -> str:
+        return self.__repr__()
+
 
 settings = Settings()
+

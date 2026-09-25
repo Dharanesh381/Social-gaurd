@@ -6,7 +6,7 @@ from typing import Any
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 
-from app.modules.comment_analysis.similarity import get_sbert_model
+from app.modules.comment_analysis.similarity import get_cached_embeddings, get_sbert_model
 from app.modules.similar_content.content_repository import (
     BaseContentRepository,
     HistoricalContentItem,
@@ -132,9 +132,9 @@ class SimilarContentAnalyzer:
 
         try:
             sbert = get_sbert_model()
-            post_emb = sbert.encode([text], convert_to_numpy=True, show_progress_bar=False)
+            post_emb = get_cached_embeddings([text], model=sbert)
             hist_texts = [item.text for item in historical_items]
-            hist_embs = sbert.encode(hist_texts, convert_to_numpy=True, show_progress_bar=False)
+            hist_embs = get_cached_embeddings(hist_texts, model=sbert)
 
             sim_matrix = cosine_similarity(post_emb, hist_embs)[0]
             max_idx = int(np.argmax(sim_matrix))
@@ -208,9 +208,20 @@ class SimilarContentAnalyzer:
         # Step 8: Calibrated Similarity Score Calculation (0 - 100)
         #
         # High score (75-100) = Original / fresh content context, no recycled hoaxes.
-        # Low score (0-39)   = Recycled debunked hoax or recirculated viral template.
+        # Moderate score (50-74) = Sensational viral formatting or unverified novelty.
+        # Low score (0-49)   = Recycled debunked hoax or recirculated viral template.
         # ----------------------------------------------------------------------
+        import re
         score = 85.0
+
+        is_sensational_viral = bool(
+            re.search(r"\b(breaking|urgent|share to save lives|spread the word|secret cure|miracle cure|must share|watch before deleted|shocking)\b", text, re.I)
+            or (text.count("!") >= 3)
+            or (len(post_hashtags_set) >= 5)
+        )
+        if is_sensational_viral:
+            score -= 35.0
+            flags.append("SENSATIONAL_VIRAL_FORMATTING")
 
         if recycled_content:
             # Penalty for recycling old narratives without context (up to 30 pts)

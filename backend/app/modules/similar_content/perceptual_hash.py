@@ -25,18 +25,17 @@ def compute_image_perceptual_hash(image_bytes: bytes) -> str | None:
 
 
 async def fetch_and_hash_image(image_url: str, timeout: float = 6.0) -> str | None:
-    """Download image from URL with graceful error handling and compute its pHash."""
+    """Download image from URL with SSRF protection and compute its pHash."""
     if not image_url:
         return None
 
     try:
-        async with httpx.AsyncClient(timeout=timeout) as client:
-            resp = await client.get(image_url)
-            if resp.status_code == 200:
-                return compute_image_perceptual_hash(resp.content)
-            else:
-                logger.warning("Image download failed from %s with status %d", image_url[:40], resp.status_code)
-                return None
+        from app.utils.security import safe_fetch_image_bytes
+
+        content = await safe_fetch_image_bytes(image_url, timeout=timeout)
+        if content:
+            return compute_image_perceptual_hash(content)
+        return None
     except Exception as exc:
         logger.warning("Error fetching image for perceptual hashing: %s", exc)
         return None

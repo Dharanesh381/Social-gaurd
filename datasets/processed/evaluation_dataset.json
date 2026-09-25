@@ -1,0 +1,812 @@
+{
+  "version": "1.0.0",
+  "description": "Social Guard Standardized Multi-Modal Evaluation Benchmark Dataset",
+  "created_at": "2026-09-24T01:05:00Z",
+  "total_items": 15,
+  "label_distribution": {
+    "LIKELY REAL": 3,
+    "PROBABLY REAL": 3,
+    "UNCERTAIN": 3,
+    "PROBABLY FAKE": 3,
+    "LIKELY FAKE": 3
+  },
+  "items": [
+    {
+      "id": "eval_001",
+      "name": "NASA Webb Telescope Atmospheric Detection",
+      "source_type": "real_world_case",
+      "is_synthetic": false,
+      "expected_classification": "LIKELY REAL",
+      "ground_truth": "REAL",
+      "post": {
+        "post_id": "nasa_jwst_atmosphere_101",
+        "platform": "twitter",
+        "text": "NASA James Webb Space Telescope confirms detection of carbon dioxide and water vapor in exoplanet WASP-39b atmosphere.",
+        "hashtags": ["#NASA", "#JWST", "#Exoplanet", "#Astronomy"],
+        "media": [
+          {
+            "url": "https://images.nasa.gov/details/jwst_wasp39b_spectrum.jpg",
+            "media_type": "image"
+          }
+        ],
+        "timestamp": "2026-08-15T14:00:00Z",
+        "author": {
+          "username": "NASA",
+          "account_age_days": 5400,
+          "followers": 75000000,
+          "following": 300,
+          "posts_per_day": 8.5,
+          "comments_per_day": 2.0,
+          "engagement_rate": 0.04
+        },
+        "comments": [
+          {
+            "comment_id": "c_001_1",
+            "author_id": "astrophysics_lab",
+            "text": "Tremendous confirmation! The transmission spectrum resolution is unprecedented.",
+            "likes": 520,
+            "emojis": ["👏", "✨"]
+          },
+          {
+            "comment_id": "c_001_2",
+            "author_id": "science_reader",
+            "text": "Verified by ESA and Nature publications as well.",
+            "likes": 180,
+            "emojis": []
+          }
+        ]
+      },
+      "mock_fact_check_response": {
+        "status": "SUCCESS",
+        "claims": [
+          {
+            "text": "NASA James Webb Space Telescope confirms detection of carbon dioxide in exoplanet atmosphere.",
+            "claimant": "NASA",
+            "claimReview": [
+              {
+                "publisher": {"name": "Reuters Fact Check", "site": "reuters.com"},
+                "url": "https://www.reuters.com/fact-check/jwst-wasp-detection",
+                "title": "NASA James Webb Telescope data verified by independent peer reviews",
+                "textualRating": "True"
+              }
+            ]
+          }
+        ]
+      },
+      "expected_evidence_status": "SUPPORTED",
+      "expected_user_anomaly": false,
+      "expected_recycled_content": false
+    },
+    {
+      "id": "eval_002",
+      "name": "WHO Global Influenza Vaccination Update",
+      "source_type": "real_world_case",
+      "is_synthetic": false,
+      "expected_classification": "LIKELY REAL",
+      "ground_truth": "REAL",
+      "post": {
+        "post_id": "who_flu_update_102",
+        "platform": "twitter",
+        "text": "World Health Organization announces updated seasonal influenza vaccine composition recommendations for upcoming winter season.",
+        "hashtags": ["#WHO", "#PublicHealth", "#FluVaccine"],
+        "media": [],
+        "timestamp": "2026-08-20T11:00:00Z",
+        "author": {
+          "username": "WHO",
+          "account_age_days": 4900,
+          "followers": 12000000,
+          "following": 1200,
+          "posts_per_day": 12.0,
+          "comments_per_day": 1.5,
+          "engagement_rate": 0.02
+        },
+        "comments": [
+          {
+            "comment_id": "c_002_1",
+            "author_id": "clinical_doc",
+            "text": "Standard annual strain formulation update based on surveillance data.",
+            "likes": 84,
+            "emojis": []
+          }
+        ]
+      },
+      "mock_fact_check_response": {
+        "status": "SUCCESS",
+        "claims": [
+          {
+            "text": "World Health Organization announces updated seasonal influenza vaccine composition recommendations.",
+            "claimant": "WHO",
+            "claimReview": [
+              {
+                "publisher": {"name": "AFP Fact Check", "site": "factcheck.afp.com"},
+                "url": "https://factcheck.afp.com/who-flu-recommendations",
+                "title": "WHO issues official vaccine strain guidance",
+                "textualRating": "Correct / True"
+              }
+            ]
+          }
+        ]
+      },
+      "expected_evidence_status": "SUPPORTED",
+      "expected_user_anomaly": false,
+      "expected_recycled_content": false
+    },
+    {
+      "id": "eval_003",
+      "name": "Geological Survey Seismic Measurement Report",
+      "source_type": "synthetic",
+      "is_synthetic": true,
+      "expected_classification": "LIKELY REAL",
+      "ground_truth": "REAL",
+      "post": {
+        "post_id": "usgs_seismic_report_103",
+        "platform": "twitter",
+        "text": "USGS seismologists record magnitude 4.8 earthquake 15km offshore Northern California with no tsunami risk reported.",
+        "hashtags": ["#Earthquake", "#California", "#Seismology"],
+        "media": [],
+        "timestamp": "2026-09-01T06:30:00Z",
+        "author": {
+          "username": "USGS_Quakes",
+          "account_age_days": 4500,
+          "followers": 1800000,
+          "following": 80,
+          "posts_per_day": 15.0,
+          "comments_per_day": 0.5,
+          "engagement_rate": 0.03
+        },
+        "comments": [
+          {
+            "comment_id": "c_003_1",
+            "author_id": "coast_resident",
+            "text": "Felt mild shaking in Eureka, no damage observed.",
+            "likes": 32,
+            "emojis": []
+          }
+        ]
+      },
+      "mock_fact_check_response": {
+        "status": "SUCCESS",
+        "claims": [
+          {
+            "text": "Magnitude 4.8 earthquake recorded offshore Northern California with no tsunami risk.",
+            "claimant": "USGS",
+            "claimReview": [
+              {
+                "publisher": {"name": "AP Fact Check", "site": "apnews.com"},
+                "url": "https://apnews.com/article/california-quake-usgs",
+                "title": "USGS confirms offshore seismic event",
+                "textualRating": "True"
+              }
+            ]
+          }
+        ]
+      },
+      "expected_evidence_status": "SUPPORTED",
+      "expected_user_anomaly": false,
+      "expected_recycled_content": false
+    },
+    {
+      "id": "eval_004",
+      "name": "Local Public Library Community Reopening",
+      "source_type": "real_world_case",
+      "is_synthetic": false,
+      "expected_classification": "PROBABLY REAL",
+      "ground_truth": "REAL",
+      "post": {
+        "post_id": "reddit_library_reopen_201",
+        "platform": "reddit",
+        "text": "The downtown public library branch has officially finished roof renovations and reopens to visitors tomorrow morning at 9am.",
+        "hashtags": ["#Community", "#PublicLibrary", "#Downtown"],
+        "media": [],
+        "timestamp": "2026-09-12T15:00:00Z",
+        "author": {
+          "username": "booklover_sarah",
+          "account_age_days": 1250,
+          "followers": 450,
+          "following": 310,
+          "posts_per_day": 0.8,
+          "comments_per_day": 3.2,
+          "engagement_rate": 0.03
+        },
+        "comments": [
+          {
+            "comment_id": "c_004_1",
+            "author_id": "reading_group_member",
+            "text": "Finally! Looking forward to picking up my reserved books.",
+            "likes": 16,
+            "emojis": ["📚"]
+          }
+        ]
+      },
+      "mock_fact_check_response": {
+        "status": "SUCCESS",
+        "claims": []
+      },
+      "expected_evidence_status": "NO_FACT_CHECK_FOUND",
+      "expected_user_anomaly": false,
+      "expected_recycled_content": false
+    },
+    {
+      "id": "eval_005",
+      "name": "Amateur Astronomer Saturn Ring Capture",
+      "source_type": "synthetic",
+      "is_synthetic": true,
+      "expected_classification": "PROBABLY REAL",
+      "ground_truth": "REAL",
+      "post": {
+        "post_id": "ig_astronomy_hobby_202",
+        "platform": "instagram",
+        "text": "Managed to capture clean Cassini division detail on Saturn last night through my 8-inch Dobsonian telescope in my backyard.",
+        "hashtags": ["#Astrophotography", "#Saturn", "#Telescope", "#BackyardAstronomy"],
+        "media": [
+          {
+            "url": "https://example.com/saturn_backyard.jpg",
+            "media_type": "image"
+          }
+        ],
+        "timestamp": "2026-09-14T22:30:00Z",
+        "author": {
+          "username": "astro_hobbyist_dave",
+          "account_age_days": 820,
+          "followers": 2800,
+          "following": 640,
+          "posts_per_day": 0.5,
+          "comments_per_day": 2.1,
+          "engagement_rate": 0.05
+        },
+        "comments": [
+          {
+            "comment_id": "c_005_1",
+            "author_id": "space_enthusiast",
+            "text": "Great sharpness and collimation on that shot Dave!",
+            "likes": 42,
+            "emojis": ["🔭"]
+          }
+        ]
+      },
+      "mock_fact_check_response": {
+        "status": "SUCCESS",
+        "claims": []
+      },
+      "expected_evidence_status": "NO_FACT_CHECK_FOUND",
+      "expected_user_anomaly": false,
+      "expected_recycled_content": false
+    },
+    {
+      "id": "eval_006",
+      "name": "University Campus Intramural Tournament",
+      "source_type": "synthetic",
+      "is_synthetic": true,
+      "expected_classification": "PROBABLY REAL",
+      "ground_truth": "REAL",
+      "post": {
+        "post_id": "campus_sports_recap_203",
+        "platform": "twitter",
+        "text": "Congratulations to the Engineering Tigers for winning the annual fall intramural volleyball tournament in straight sets!",
+        "hashtags": ["#CampusLife", "#Intramurals", "#Volleyball"],
+        "media": [],
+        "timestamp": "2026-09-18T20:15:00Z",
+        "author": {
+          "username": "campus_rec_official",
+          "account_age_days": 1800,
+          "followers": 5400,
+          "following": 420,
+          "posts_per_day": 1.2,
+          "comments_per_day": 1.8,
+          "engagement_rate": 0.04
+        },
+        "comments": [
+          {
+            "comment_id": "c_006_1",
+            "author_id": "student_fan",
+            "text": "Incredible match, great defense by both squads!",
+            "likes": 28,
+            "emojis": ["🎉"]
+          }
+        ]
+      },
+      "mock_fact_check_response": {
+        "status": "SUCCESS",
+        "claims": []
+      },
+      "expected_evidence_status": "NO_FACT_CHECK_FOUND",
+      "expected_user_anomaly": false,
+      "expected_recycled_content": false
+    },
+    {
+      "id": "eval_007",
+      "name": "Tech Gadget Unverified Leak Rumor",
+      "source_type": "real_world_case",
+      "is_synthetic": false,
+      "expected_classification": "UNCERTAIN",
+      "ground_truth": "UNCERTAIN",
+      "post": {
+        "post_id": "leak_rumor_specs_301",
+        "platform": "twitter",
+        "text": "Sources claim next flagship phone will abandon physical charging ports entirely in favor of magnetic inductive transfer.",
+        "hashtags": ["#TechRumors", "#Smartphones", "#HardwareLeak"],
+        "media": [],
+        "timestamp": "2026-09-15T12:00:00Z",
+        "author": {
+          "username": "tech_whispers_daily",
+          "account_age_days": 180,
+          "followers": 850,
+          "following": 920,
+          "posts_per_day": 4.5,
+          "comments_per_day": 6.0,
+          "engagement_rate": 0.015
+        },
+        "comments": [
+          {
+            "comment_id": "c_007_1",
+            "author_id": "dev_mike",
+            "text": "This rumor surfaces every year, supply chain sources have not corroborated it yet.",
+            "likes": 55,
+            "emojis": ["🤔"]
+          },
+          {
+            "comment_id": "c_007_2",
+            "author_id": "gadget_guy",
+            "text": "Could happen if EU regulations allow it.",
+            "likes": 12,
+            "emojis": []
+          }
+        ]
+      },
+      "mock_fact_check_response": {
+        "status": "SUCCESS",
+        "claims": []
+      },
+      "expected_evidence_status": "NO_FACT_CHECK_FOUND",
+      "expected_user_anomaly": false,
+      "expected_recycled_content": false
+    },
+    {
+      "id": "eval_008",
+      "name": "Regional Trade Speculation Commentary",
+      "source_type": "synthetic",
+      "is_synthetic": true,
+      "expected_classification": "UNCERTAIN",
+      "ground_truth": "UNCERTAIN",
+      "post": {
+        "post_id": "trade_policy_speculation_302",
+        "platform": "reddit",
+        "text": "Heard from industry insiders that regional steel tariffs might be restructured next quarter ahead of bilateral negotiations.",
+        "hashtags": ["#TradePolicy", "#Economy", "#Tariffs"],
+        "media": [],
+        "timestamp": "2026-09-16T18:40:00Z",
+        "author": {
+          "username": "econ_observer_99",
+          "account_age_days": 95,
+          "followers": 210,
+          "following": 480,
+          "posts_per_day": 3.0,
+          "comments_per_day": 4.0,
+          "engagement_rate": 0.01
+        },
+        "comments": [
+          {
+            "comment_id": "c_008_1",
+            "author_id": "policy_analyst",
+            "text": "No public ministry statement has been issued yet. Very preliminary speculation.",
+            "likes": 18,
+            "emojis": []
+          }
+        ]
+      },
+      "mock_fact_check_response": {
+        "status": "SUCCESS",
+        "claims": []
+      },
+      "expected_evidence_status": "NO_FACT_CHECK_FOUND",
+      "expected_user_anomaly": false,
+      "expected_recycled_content": false
+    },
+    {
+      "id": "eval_009",
+      "name": "Unusual Atmospheric Glow Sighting",
+      "source_type": "synthetic",
+      "is_synthetic": true,
+      "expected_classification": "UNCERTAIN",
+      "ground_truth": "UNCERTAIN",
+      "post": {
+        "post_id": "sky_glow_sighting_303",
+        "platform": "twitter",
+        "text": "Strange violet luminescent streaks observed in the southern sky for twenty minutes after sunset. Did anyone else see this?",
+        "hashtags": ["#SkyWatch", "#Meteorology", "#Optics"],
+        "media": [],
+        "timestamp": "2026-09-19T21:10:00Z",
+        "author": {
+          "username": "night_sky_curious",
+          "account_age_days": 210,
+          "followers": 380,
+          "following": 510,
+          "posts_per_day": 1.5,
+          "comments_per_day": 2.5,
+          "engagement_rate": 0.02
+        },
+        "comments": [
+          {
+            "comment_id": "c_009_1",
+            "author_id": "weather_buff",
+            "text": "Could be STEVE optical emissions or upper atmosphere rocket exhaust reflection.",
+            "likes": 22,
+            "emojis": ["🌌"]
+          }
+        ]
+      },
+      "mock_fact_check_response": {
+        "status": "SUCCESS",
+        "claims": []
+      },
+      "expected_evidence_status": "NO_FACT_CHECK_FOUND",
+      "expected_user_anomaly": false,
+      "expected_recycled_content": false
+    },
+    {
+      "id": "eval_010",
+      "name": "Guaranteed Crypto Return Scheme",
+      "source_type": "synthetic",
+      "is_synthetic": true,
+      "expected_classification": "PROBABLY FAKE",
+      "ground_truth": "FAKE",
+      "post": {
+        "post_id": "crypto_scam_blast_401",
+        "platform": "twitter",
+        "text": "URGENT OPPORTUNITY: Secret decentralized arbitrage bot guarantees 450% daily compounding returns on all deposits! Join link in bio.",
+        "hashtags": ["#CryptoGains", "#FreeMoney", "#PassiveIncome", "#Arbitrage"],
+        "media": [],
+        "timestamp": "2026-09-21T03:00:00Z",
+        "author": {
+          "username": "crypto_whale_profits_99",
+          "account_age_days": 8,
+          "followers": 25,
+          "following": 4200,
+          "posts_per_day": 48.0,
+          "comments_per_day": 0.2,
+          "engagement_rate": 0.001,
+          "duplicate_content_ratio": 0.85,
+          "hashtag_repetition_rate": 0.90
+        },
+        "comments": [
+          {
+            "comment_id": "c_010_1",
+            "author_id": "scam_hunter",
+            "text": "Total scam and phishing wallet drainer! Do not connect your wallet!",
+            "likes": 95,
+            "emojis": ["🚨", "⛔"]
+          },
+          {
+            "comment_id": "c_010_2",
+            "author_id": "crypto_security",
+            "text": "Reported for financial fraud. Classic Ponzi scheme promise.",
+            "likes": 64,
+            "emojis": []
+          }
+        ]
+      },
+      "mock_fact_check_response": {
+        "status": "SUCCESS",
+        "claims": [
+          {
+            "text": "Secret decentralized arbitrage bot guarantees 450% daily compounding returns.",
+            "claimant": "crypto_whale_profits_99",
+            "claimReview": [
+              {
+                "publisher": {"name": "PolitiFact", "site": "politifact.com"},
+                "url": "https://www.politifact.com/factchecks/crypto-arbitrage-drainer",
+                "title": "Crypto scheme promises are fraudulent phishing traps",
+                "textualRating": "False / Scam"
+              }
+            ]
+          }
+        ]
+      },
+      "expected_evidence_status": "CONTRADICTED",
+      "expected_user_anomaly": true,
+      "expected_recycled_content": false
+    },
+    {
+      "id": "eval_011",
+      "name": "Sensational Celebrity Passing Hoax",
+      "source_type": "real_world_case",
+      "is_synthetic": false,
+      "expected_classification": "PROBABLY FAKE",
+      "ground_truth": "FAKE",
+      "post": {
+        "post_id": "celebrity_death_hoax_402",
+        "platform": "twitter",
+        "text": "BREAKING: Legendary Hollywood star passes away peacefully at home this morning according to family spokesperson.",
+        "hashtags": ["#BreakingNews", "#RestInPeace", "#Hollywood"],
+        "media": [],
+        "timestamp": "2026-09-22T08:00:00Z",
+        "author": {
+          "username": "buzz_headline_express",
+          "account_age_days": 45,
+          "followers": 120,
+          "following": 1800,
+          "posts_per_day": 22.0,
+          "comments_per_day": 0.5,
+          "engagement_rate": 0.005,
+          "duplicate_content_ratio": 0.60
+        },
+        "comments": [
+          {
+            "comment_id": "c_011_1",
+            "author_id": "fact_checker_user",
+            "text": "Fake news! The actor literally posted a live video on Instagram an hour ago.",
+            "likes": 110,
+            "emojis": ["❌"]
+          }
+        ]
+      },
+      "mock_fact_check_response": {
+        "status": "SUCCESS",
+        "claims": [
+          {
+            "text": "Legendary Hollywood star passes away peacefully at home.",
+            "claimant": "buzz_headline_express",
+            "claimReview": [
+              {
+                "publisher": {"name": "Snopes", "site": "snopes.com"},
+                "url": "https://www.snopes.com/fact-check/actor-death-hoax",
+                "title": "Actor is alive and well despite viral social media rumors",
+                "textualRating": "False"
+              }
+            ]
+          }
+        ]
+      },
+      "expected_evidence_status": "CONTRADICTED",
+      "expected_user_anomaly": true,
+      "expected_recycled_content": false
+    },
+    {
+      "id": "eval_012",
+      "name": "Fabricated Politician Energy Policy Quote",
+      "source_type": "synthetic",
+      "is_synthetic": true,
+      "expected_classification": "PROBABLY FAKE",
+      "ground_truth": "FAKE",
+      "post": {
+        "post_id": "fabricated_quote_energy_403",
+        "platform": "twitter",
+        "text": "Leaked recording reveals energy minister stated 'we plan to shut down domestic power plants without backup grid reserves'.",
+        "hashtags": ["#EnergyCrisis", "#LeakedAudio", "#Scandal"],
+        "media": [],
+        "timestamp": "2026-09-22T14:15:00Z",
+        "author": {
+          "username": "outrage_wire_network",
+          "account_age_days": 60,
+          "followers": 210,
+          "following": 2800,
+          "posts_per_day": 25.0,
+          "comments_per_day": 0.8,
+          "engagement_rate": 0.008,
+          "duplicate_content_ratio": 0.40
+        },
+        "comments": [
+          {
+            "comment_id": "c_012_1",
+            "author_id": "audio_analyst",
+            "text": "The audio is a clear cut-and-paste manipulation from two completely different speeches.",
+            "likes": 85,
+            "emojis": ["⚠️"]
+          }
+        ]
+      },
+      "mock_fact_check_response": {
+        "status": "SUCCESS",
+        "claims": [
+          {
+            "text": "Energy minister stated 'we plan to shut down domestic power plants without backup grid reserves'.",
+            "claimant": "outrage_wire_network",
+            "claimReview": [
+              {
+                "publisher": {"name": "Reuters Fact Check", "site": "reuters.com"},
+                "url": "https://www.reuters.com/fact-check/energy-minister-quote-altered",
+                "title": "Clip was deceptively edited to reverse the speaker's meaning",
+                "textualRating": "False / Altered"
+              }
+            ]
+          }
+        ]
+      },
+      "expected_evidence_status": "CONTRADICTED",
+      "expected_user_anomaly": true,
+      "expected_recycled_content": false
+    },
+    {
+      "id": "eval_013",
+      "name": "Lethal Chemical Ingestion Miracle Protocol",
+      "source_type": "real_world_case",
+      "is_synthetic": false,
+      "expected_classification": "LIKELY FAKE",
+      "ground_truth": "FAKE",
+      "post": {
+        "post_id": "bleach_miracle_cure_501",
+        "platform": "twitter",
+        "text": "BREAKING: Drinking boiling concentrated bleach with salt completely cures any disease in minutes! Big pharma hides this miracle protocol!",
+        "hashtags": ["#MiracleCure", "#BleachProtocol", "#HealthFreedom"],
+        "media": [
+          {
+            "url": "https://example.com/bleach_bottle.jpg",
+            "media_type": "image"
+          }
+        ],
+        "timestamp": "2026-09-23T02:00:00Z",
+        "author": {
+          "username": "super_cure_blast_bot",
+          "account_age_days": 1,
+          "followers": 2,
+          "following": 4800,
+          "posts_per_day": 75.0,
+          "comments_per_day": 0.0,
+          "engagement_rate": 0.0001,
+          "duplicate_content_ratio": 0.95,
+          "hashtag_repetition_rate": 0.95
+        },
+        "comments": [
+          {
+            "comment_id": "c_013_1",
+            "author_id": "er_physician",
+            "text": "THIS IS LETHAL POISON! DO NOT INGEST! INGESTING BLEACH DESTROYS INTERNAL ORGANS!",
+            "likes": 650,
+            "emojis": ["🛑", "☠️", "🚨"]
+          },
+          {
+            "comment_id": "c_013_2",
+            "author_id": "toxicology_watch",
+            "text": "Reported immediately to platform security and emergency medical authorities.",
+            "likes": 420,
+            "emojis": ["⚠️"]
+          }
+        ]
+      },
+      "mock_fact_check_response": {
+        "status": "SUCCESS",
+        "claims": [
+          {
+            "text": "Drinking boiling concentrated bleach with salt completely cures any disease.",
+            "claimant": "super_cure_blast_bot",
+            "claimReview": [
+              {
+                "publisher": {"name": "Snopes", "site": "snopes.com"},
+                "url": "https://www.snopes.com/fact-check/bleach-miracle-cure-dangerous",
+                "title": "Ingesting bleach is toxic and dangerous; does not cure disease",
+                "textualRating": "False / Dangerous Hoax"
+              }
+            ]
+          }
+        ]
+      },
+      "expected_evidence_status": "CONTRADICTED",
+      "expected_user_anomaly": true,
+      "expected_recycled_content": true
+    },
+    {
+      "id": "eval_014",
+      "name": "Recycled 5G Radiation Virus Theory",
+      "source_type": "real_world_case",
+      "is_synthetic": false,
+      "expected_classification": "LIKELY FAKE",
+      "ground_truth": "FAKE",
+      "post": {
+        "post_id": "5g_virus_conspiracy_502",
+        "platform": "twitter",
+        "text": "Cellular 5G towers emit frequency waves that generate viral outbreaks in metropolitan areas to force population lockdowns.",
+        "hashtags": ["#5GConspiracy", "#WakeUp", "#RadiationHoax"],
+        "media": [],
+        "timestamp": "2026-09-23T04:30:00Z",
+        "author": {
+          "username": "conspiracy_bot_farm_3",
+          "account_age_days": 4,
+          "followers": 15,
+          "following": 3900,
+          "posts_per_day": 62.0,
+          "comments_per_day": 0.1,
+          "engagement_rate": 0.0005,
+          "duplicate_content_ratio": 0.90,
+          "hashtag_repetition_rate": 0.90
+        },
+        "comments": [
+          {
+            "comment_id": "c_014_1",
+            "author_id": "telecom_engineer",
+            "text": "Old debunked myth from 2020. Radio frequencies are non-ionizing and cannot produce biological pathogens.",
+            "likes": 310,
+            "emojis": ["🤦‍♂️"]
+          }
+        ]
+      },
+      "mock_fact_check_response": {
+        "status": "SUCCESS",
+        "claims": [
+          {
+            "text": "Cellular 5G towers emit frequency waves that generate viral outbreaks.",
+            "claimant": "conspiracy_bot_farm_3",
+            "claimReview": [
+              {
+                "publisher": {"name": "AFP Fact Check", "site": "factcheck.afp.com"},
+                "url": "https://factcheck.afp.com/5g-virus-myth-debunked",
+                "title": "5G technology has no correlation with viral biological transmission",
+                "textualRating": "False"
+              }
+            ]
+          }
+        ]
+      },
+      "expected_evidence_status": "CONTRADICTED",
+      "expected_user_anomaly": true,
+      "expected_recycled_content": true
+    },
+    {
+      "id": "eval_015",
+      "name": "Fabricated Deepfake Emergency Catastrophe",
+      "source_type": "synthetic",
+      "is_synthetic": true,
+      "expected_classification": "LIKELY FAKE",
+      "ground_truth": "FAKE",
+      "post": {
+        "post_id": "deepfake_catastrophe_503",
+        "platform": "twitter",
+        "text": "BREAKING VIDEO: Major coastal city dam collapsed an hour ago with catastrophic flooding sweeping downtown streets! EVACUATE NOW!",
+        "hashtags": ["#Emergency", "#DamCollapse", "#Evacuation", "#Disaster"],
+        "media": [
+          {
+            "url": "https://example.com/fake_flooding_cgi.jpg",
+            "media_type": "image"
+          }
+        ],
+        "timestamp": "2026-09-23T05:00:00Z",
+        "author": {
+          "username": "panic_clickbait_bot",
+          "account_age_days": 2,
+          "followers": 5,
+          "following": 5000,
+          "posts_per_day": 85.0,
+          "comments_per_day": 0.0,
+          "engagement_rate": 0.0001,
+          "duplicate_content_ratio": 0.98,
+          "hashtag_repetition_rate": 0.95
+        },
+        "comments": [
+          {
+            "comment_id": "c_015_1",
+            "author_id": "emergency_services_official",
+            "text": "THIS IS FABRICATED DISINFORMATION. All dams are operating normally. The video is CGI gaming footage.",
+            "likes": 890,
+            "emojis": ["🚨", "🛑"]
+          },
+          {
+            "comment_id": "c_015_2",
+            "author_id": "local_mayor",
+            "text": "Fake news trying to cause panic. Legal action is being pursued.",
+            "likes": 480,
+            "emojis": []
+          }
+        ]
+      },
+      "mock_fact_check_response": {
+        "status": "SUCCESS",
+        "claims": [
+          {
+            "text": "Major coastal city dam collapsed with catastrophic flooding sweeping downtown streets.",
+            "claimant": "panic_clickbait_bot",
+            "claimReview": [
+              {
+                "publisher": {"name": "AP Fact Check", "site": "apnews.com"},
+                "url": "https://apnews.com/article/dam-collapse-video-cgi-factcheck",
+                "title": "Video claiming catastrophic dam collapse is synthetic CGI footage",
+                "textualRating": "False / Fabricated"
+              }
+            ]
+          }
+        ]
+      },
+      "expected_evidence_status": "CONTRADICTED",
+      "expected_user_anomaly": true,
+      "expected_recycled_content": true
+    }
+  ]
+}

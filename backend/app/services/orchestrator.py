@@ -47,6 +47,15 @@ class AnalysisOrchestratorService:
         )
 
         all_flags: list[str] = []
+        if not post.comments:
+            all_flags.append("NO_COMMENTS_AVAILABLE")
+        if not post.media:
+            all_flags.append("NO_MEDIA_ATTACHED")
+        if post.timestamp is None:
+            all_flags.append("NO_POST_TIMESTAMP")
+        if post.author is None:
+            all_flags.append("NO_AUTHOR_METADATA")
+
         module_breakdowns: dict[str, Any] = {}
         module_timing: dict[str, float] = {}
 
@@ -58,23 +67,28 @@ class AnalysisOrchestratorService:
             m1_res = comment_analyzer.analyze(post.comments)
             module_timing["comment_analysis_ms"] = round((time.perf_counter() - m1_start) * 1000, 2)
             m1_score = m1_res.get("comment_score")
+            comment_fact_check = m1_res.get("fact_check", {})
             module_breakdowns["comments"] = {
                 "score": m1_score,
                 "status": "COMPLETED",
                 "metrics": m1_res.get("metrics", {}),
+                "fact_check": comment_fact_check,
                 "flags": m1_res.get("flags", []),
             }
             all_flags.extend(m1_res.get("flags", []))
-            logger.info("Module 1 (Comments) finished in %sms | Score: %s", module_timing["comment_analysis_ms"], m1_score)
+            logger.info("Module 1 (Comments) finished in %sms | Score: %s | FactCheck Verdict: %s",
+                        module_timing["comment_analysis_ms"], m1_score, comment_fact_check.get("verdict"))
         except Exception as exc:
             logger.error("Module 1 (Comments) failed: %s", exc)
             module_timing["comment_analysis_ms"] = round((time.perf_counter() - m1_start) * 1000, 2)
             m1_score = None
+            comment_fact_check = {}
             module_breakdowns["comments"] = {
                 "score": None,
                 "status": "MODULE_ERROR",
                 "error": str(exc),
                 "metrics": {},
+                "fact_check": {},
                 "flags": ["COMMENT_ANALYSIS_FAILED"],
             }
             all_flags.append("COMMENT_ANALYSIS_FAILED")
@@ -85,7 +99,12 @@ class AnalysisOrchestratorService:
         m2_start = time.perf_counter()
         try:
             img_urls = [str(m.url) for m in post.media if m.url]
-            m2_res = await evidence_verifier.verify(post_text=post.text, image_urls=img_urls)
+            m2_res = await evidence_verifier.verify(
+                post_text=post.text,
+                image_urls=img_urls,
+                comments=post.comments,
+                comment_claims=comment_fact_check.get("extracted_comment_claims", []),
+            )
             module_timing["evidence_verification_ms"] = round((time.perf_counter() - m2_start) * 1000, 2)
             m2_score = m2_res.get("evidence_score")
             module_breakdowns["evidence"] = {
@@ -250,6 +269,12 @@ class AnalysisOrchestratorService:
             "positive_factors": xai_res["positive_factors"],
             "negative_factors": xai_res["negative_factors"],
             "flags": list(set(all_flags)),
+            "module_scores": {
+                "comment_analysis": m1_score,
+                "evidence_verification": m2_score,
+                "user_behaviour": m3_score,
+                "similar_content": m4_score,
+            },
         }
 
         try:
@@ -271,7 +296,8 @@ class AnalysisOrchestratorService:
                         module_breakdowns=module_breakdowns,
                     )
         except Exception as exc:
-            logger.warning("Failed to persist verification session to DB: %s", exc)
+            logger.error("Failed to persist verification session to DB: %s", exc)
+            all_flags.append("DB_PERSISTENCE_FAILED")
 
         logger.info(
             "Pipeline [%s] completed in %sms | Final Score: %.2f | Verdict: %s | AI Prob: %s",

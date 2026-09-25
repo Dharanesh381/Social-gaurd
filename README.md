@@ -70,31 +70,43 @@ Social Guard fuses 5 specialized analytical modules and an independent AI genera
 
 ## 📚 Complete Academic Documentation
 
-- 📖 [ALGORITHMS.md](file:///Users/dharanesh/Desktop/Social-gaurd/ALGORITHMS.md) — Comprehensive explanation of all algorithms, inputs, formulas, outputs, and limitations.
-- 🏛️ [SYSTEM_ARCHITECTURE.md](file:///Users/dharanesh/Desktop/Social-gaurd/SYSTEM_ARCHITECTURE.md) — Architectural overview, data flows, and tier interactions.
-- 🔌 [API_DOCUMENTATION.md](file:///Users/dharanesh/Desktop/Social-gaurd/API_DOCUMENTATION.md) — Full REST API contract and schema specification.
-- 🗄️ [DATABASE_DESIGN.md](file:///Users/dharanesh/Desktop/Social-gaurd/DATABASE_DESIGN.md) — Relational schema, indexes, and Mermaid ERD.
-- 🧪 [TEST_REPORT.md](file:///Users/dharanesh/Desktop/Social-gaurd/TEST_REPORT.md) — End-to-end 17-scenario system test matrix (All 87 tests passing).
-- 📊 [EVALUATION_REPORT.md](file:///Users/dharanesh/Desktop/Social-gaurd/EVALUATION_REPORT.md) — Accuracy, Precision, Recall, F1-score, and confusion matrix benchmarks.
-- 🛡️ [SECURITY_PRIVACY.md](file:///Users/dharanesh/Desktop/Social-gaurd/SECURITY_PRIVACY.md) — Security audit, privacy practices, and hardening checklist.
-- 💻 [USER_GUIDE.md](file:///Users/dharanesh/Desktop/Social-gaurd/USER_GUIDE.md) — Step-by-step instructions for running the backend and Chrome Extension.
+- 📖 [ALGORITHMS.md](ALGORITHMS.md) — Comprehensive explanation of all algorithms, inputs, formulas, outputs, and limitations.
+- 🏛️ [SYSTEM_ARCHITECTURE.md](SYSTEM_ARCHITECTURE.md) — Architectural overview, data flows, and tier interactions.
+- 🔌 [API_DOCUMENTATION.md](API_DOCUMENTATION.md) — Full REST API contract and schema specification.
+- 🗄️ [DATABASE_DESIGN.md](DATABASE_DESIGN.md) — Relational schema, indexes, and Mermaid ERD.
+- 🧪 [TEST_REPORT.md](TEST_REPORT.md) — End-to-end scenario test matrix (116 automated tests passing).
+- 📊 [EVALUATION_REPORT.md](EVALUATION_REPORT.md) — Accuracy, Precision, Recall, F1-score, and confusion matrix benchmarks.
+- 🛡️ [SECURITY_PRIVACY.md](SECURITY_PRIVACY.md) — Security audit, privacy practices, and hardening checklist.
+- 💻 [USER_GUIDE.md](USER_GUIDE.md) — Complete 21-part Operations & User Guide for Windows.
 
 ---
 
-## ⚡ Quick Start
+## ⚡ Quick Start (Windows PowerShell)
 
-```bash
-# 1. Setup environment and install dependencies
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
+```powershell
+# 1. Setup virtual environment and install dependencies
+python -m venv venv
+.\venv\Scripts\Activate.ps1
+pip install -r backend/requirements.txt
 
-# 2. Run test suite
-PYTHONPATH=backend pytest backend/tests -v
+# 2. Configure environment template
+Copy-Item backend\.env.example backend\.env
 
-# 3. Start the FastAPI verification server
-PYTHONPATH=backend uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
+# 3. Run complete test suite (116 tests)
+$env:PYTHONPATH="backend"
+.\venv\Scripts\python.exe -m pytest backend/tests -v
+
+# 4. Start the FastAPI verification server
+.\venv\Scripts\uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
 ```
+
+### Loading the Chrome Extension:
+1. Open Google Chrome $\to$ Navigate to `chrome://extensions/`.
+2. Toggle **Developer mode** to ON.
+3. Click **Load unpacked** $\to$ Select the `extension/` directory.
+4. Open any post on X/Twitter, Reddit, or Instagram and click **Extract from Tab** $\to$ **Analyze & Verify Content**.
+
+See [USER_GUIDE.md](USER_GUIDE.md) for full documentation on architecture, database persistence, evaluation, and troubleshooting.
 
 ---
 
