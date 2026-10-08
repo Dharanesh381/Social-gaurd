@@ -17,7 +17,7 @@ Covers all 17 system testing scenarios:
 13. Missing user information
 14. Missing media
 15. API failure / graceful degradation
-16. Database failure resilience
+16. In-memory pipeline execution
 17. Extension / backend connection failure
 """
 
@@ -363,22 +363,21 @@ async def test_case_15_api_failure_graceful_degradation():
 
 
 # ------------------------------------------------------------------------------
-# 16. Database failure resilience
+# 16. In-memory pipeline execution without database dependencies
 # ------------------------------------------------------------------------------
-def test_case_16_database_failure_resilience():
-    """Case 16: Database persistence failure does NOT crash the /analyze API response."""
+def test_case_16_in_memory_pipeline_execution():
+    """Case 16: Verification executes purely in memory without database dependencies."""
     payload = {
         "post": {
             "platform": "reddit",
-            "text": "A simple test post to ensure database failure isolation.",
+            "text": "A simple test post to ensure in-memory pipeline execution without database dependencies.",
         }
     }
-    with patch("app.services.persistence.VerificationPersistenceService.save_verification_session", new=AsyncMock(side_effect=Exception("Database lock/offline error"))):
-        response = client.post("/analyze", json=payload)
-        assert response.status_code == 200
-        data = response.json()
-        assert "consolidated_score" in data
-        assert "classification" in data
+    response = client.post("/analyze", json=payload)
+    assert response.status_code == 200
+    data = response.json()
+    assert "consolidated_score" in data
+    assert "classification" in data
 
 
 # ------------------------------------------------------------------------------

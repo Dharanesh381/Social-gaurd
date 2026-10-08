@@ -52,23 +52,31 @@ class SimilarContentAnalyzer:
         image_urls: list[str] | None = None,
         post_timestamp: datetime | None = None,
         image_phash_override: str | None = None,
+        image_dhash_override: str | None = None,
+        image_bytes: bytes | None = None,
     ) -> dict[str, Any]:
         """Execute full Similar Content & Hashtag Analysis pipeline.
 
         Returns:
             Dict conforming to:
             {
-                "similarity_score": float (0-100),
-                "status": "NO_HISTORICAL_MATCH" | "HISTORICAL_CORPUS_MATCH",
-                "similar_content_count": int,
-                "text_similarity": float (0.0 to 1.0),
-                "image_similarity": float (0.0 to 1.0),
-                "hashtag_similarity": float (0.0 to 1.0),
+                "score": float (0-100),
                 "recycled_content": bool,
+                "visual_similarity": float (0.0 to 1.0),
+                "semantic_similarity": float (0.0 to 1.0),
+                "keyword_similarity": float (0.0 to 1.0),
+                "matches": List[Dict],
+                "flags": List[str],
+                "explanation": str,
+                # Compatibility fields:
+                "similarity_score": float,
+                "text_similarity": float,
+                "image_similarity": float,
+                "hashtag_similarity": float,
+                "status": str,
+                "similar_content_count": int,
                 "corpus_size": int,
                 "earliest_matching_timestamp": Optional[str],
-                "flags": List[str],
-                "explanation": str
             }
         """
         flags: list[str] = ["LIMITED_LOCAL_CORPUS_EVALUATED"]
@@ -83,139 +91,187 @@ class SimilarContentAnalyzer:
         post_keywords_set = set(extract_keywords(text))
 
         # ----------------------------------------------------------------------
-        # Step 2: Perceptual Image Hashing (Safe download & handling)
+        # Step 2: Perceptual Image Hashing (pHash + dHash)
         # ----------------------------------------------------------------------
         post_phash = image_phash_override
-        if not post_phash and image_urls:
+        post_dhash = image_dhash_override
+
+        if image_bytes:
+            from app.modules.similar_content.perceptual_hash import compute_image_hashes
+
+            computed = compute_image_hashes(image_bytes)
+            post_phash = computed.get("phash")
+            post_dhash = computed.get("dhash")
+        elif not post_phash and image_urls:
             try:
-                # Hash first valid image
+                from app.modules.similar_content.perceptual_hash import fetch_and_hash_image_full
+
                 for img_url in image_urls:
-                    post_phash = await fetch_and_hash_image(str(img_url))
-                    if post_phash:
+                    hashes = await fetch_and_hash_image_full(str(img_url))
+                    if hashes.get("phash") or hashes.get("dhash"):
+                        post_phash = hashes.get("phash")
+                        post_dhash = hashes.get("dhash")
                         break
             except Exception as exc:
                 logger.warning("Error fetching and hashing image: %s", exc)
                 flags.append("IMAGE_HASH_EXTRACTION_UNAVAILABLE")
 
         # ----------------------------------------------------------------------
-        # Step 3: Historical Candidate Retrieval
+        # Step 3: Historical Candidate Retrieval from In-Memory Corpus
         # ----------------------------------------------------------------------
         historical_items = await self.repository.find_related_content(
             query_text=text,
             hashtags=list(post_hashtags_set),
             image_phash=post_phash,
+            image_dhash=post_dhash,
             top_k=10,
         )
 
-        corpus_count = len(getattr(self.repository, "_items", [])) or 3
+        corpus_count = len(getattr(self.repository, "_items", [])) or len(historical_items) or 3
 
-        if not historical_items or not text.strip():
+        if not text.strip() and not post_phash:
             return {
-                "similarity_score": 75.0,  # Neutral organic baseline (no recycled matches)
+                "score": 75.0,
+                "similarity_score": 75.0,
+                "recycled_content": False,
+                "visual_similarity": 0.0,
+                "semantic_similarity": 0.0,
+                "keyword_similarity": 0.0,
+                "matches": [],
+                "flags": flags + ["EMPTY_POST_TEXT"],
+                "explanation": f"Empty post text analyzed against {corpus_count}-item local historical corpus (75/100 baseline).",
                 "status": "NO_HISTORICAL_MATCH",
                 "similar_content_count": 0,
                 "corpus_size": corpus_count,
                 "text_similarity": 0.0,
                 "image_similarity": 0.0,
                 "hashtag_similarity": 0.0,
-                "recycled_content": False,
                 "earliest_matching_timestamp": None,
-                "flags": flags + (["NO_HISTORICAL_MATCHES_FOUND"] if text.strip() else ["EMPTY_POST_TEXT"]),
-                "explanation": f"No matching items found in the current {corpus_count}-item local historical corpus (75/100 baseline).",
             }
 
         # ----------------------------------------------------------------------
         # Step 4: Sentence-BERT Semantic Text Similarity
         # ----------------------------------------------------------------------
-        max_text_sim = 0.0
-        best_text_match: HistoricalContentItem | None = None
+        text_sims: list[float] = [0.0] * len(historical_items)
 
-        try:
-            sbert = get_sbert_model()
-            post_emb = get_cached_embeddings([text], model=sbert)
-            hist_texts = [item.text for item in historical_items]
-            hist_embs = get_cached_embeddings(hist_texts, model=sbert)
+        if text.strip() and historical_items:
+            try:
+                sbert = get_sbert_model()
+                post_emb = get_cached_embeddings([text], model=sbert)
+                hist_texts = [item.text for item in historical_items]
+                hist_embs = get_cached_embeddings(hist_texts, model=sbert)
 
-            sim_matrix = cosine_similarity(post_emb, hist_embs)[0]
-            max_idx = int(np.argmax(sim_matrix))
-            max_text_sim = round(float(sim_matrix[max_idx]), 4)
-            best_text_match = historical_items[max_idx]
-        except Exception as exc:
-            logger.error("S-BERT similarity failed during similar content analysis: %s", exc)
-            flags.append("SBERT_SIMILARITY_FALLBACK")
-
-        # ----------------------------------------------------------------------
-        # Step 5: Hashtag & Keyword Overlap
-        # ----------------------------------------------------------------------
-        max_hashtag_sim = 0.0
-        for item in historical_items:
-            h_sim = compute_jaccard_similarity(post_hashtags_set, set(item.hashtags))
-            max_hashtag_sim = max(max_hashtag_sim, h_sim)
+                cos_sims = cosine_similarity(post_emb, hist_embs)[0]
+                text_sims = [max(0.0, round(float(s), 4)) for s in cos_sims]
+            except Exception as exc:
+                logger.error("S-BERT similarity failed during similar content analysis: %s", exc)
+                flags.append("SBERT_SIMILARITY_FALLBACK")
+                for i, item in enumerate(historical_items):
+                    text_sims[i] = compute_jaccard_similarity(post_keywords_set, set(item.keywords))
 
         # ----------------------------------------------------------------------
-        # Step 6: Image Perceptual Hash Distance
+        # Step 5: Multi-Modal Item Matching & Provenance Evaluation
         # ----------------------------------------------------------------------
-        max_image_sim = 0.0
-        min_hamming_dist: int | None = None
-        best_image_match: HistoricalContentItem | None = None
+        from app.modules.similar_content.perceptual_hash import compare_visual_similarity
 
-        if post_phash:
-            for item in historical_items:
-                if item.image_phash:
-                    dist = calculate_hash_hamming_distance(post_phash, item.image_phash)
-                    if dist is not None:
-                        if min_hamming_dist is None or dist < min_hamming_dist:
-                            min_hamming_dist = dist
-                            best_image_match = item
-                        img_sim = hash_distance_to_similarity(dist)
-                        max_image_sim = max(max_image_sim, img_sim)
-
-        # ----------------------------------------------------------------------
-        # Step 7: Temporal Provenance & Recycled Content Detection
-        # ----------------------------------------------------------------------
+        matches: list[dict[str, Any]] = []
+        max_visual_sim = 0.0
+        max_semantic_sim = 0.0
+        max_keyword_sim = 0.0
+        best_overall_match: HistoricalContentItem | None = None
         recycled_content = False
         earliest_timestamp: datetime | None = None
         temporal_age_days = 0.0
 
-        # Match threshold: high text similarity (>= 0.75) OR close visual match (Hamming <= 10)
-        is_text_match = max_text_sim >= self.text_similarity_threshold
-        is_image_match = min_hamming_dist is not None and min_hamming_dist <= self.image_hamming_threshold
+        for idx, item in enumerate(historical_items):
+            sem_sim = text_sims[idx] if idx < len(text_sims) else 0.0
 
-        if is_text_match or is_image_match:
-            matched_item = best_text_match if is_text_match else best_image_match
-            if matched_item and matched_item.first_seen_timestamp:
-                earliest_timestamp = matched_item.first_seen_timestamp
-                # Ensure post_timestamp comparison handles timezone
+            # Visual similarity using pHash + dHash
+            vis_sim = 0.0
+            if post_phash or post_dhash:
+                vis_sim = compare_visual_similarity(
+                    post_phash,
+                    item.image_phash,
+                    post_dhash,
+                    getattr(item, "image_dhash", None),
+                )
+
+            # Keyword & Hashtag Jaccard similarity
+            h_sim = compute_jaccard_similarity(post_hashtags_set, set(item.hashtags))
+            k_sim = compute_jaccard_similarity(post_keywords_set, set(item.keywords))
+            kw_sim = round(max(h_sim, k_sim), 4)
+
+            max_visual_sim = max(max_visual_sim, vis_sim)
+            max_semantic_sim = max(max_semantic_sim, sem_sim)
+            max_keyword_sim = max(max_keyword_sim, kw_sim)
+
+            # Item age calculation
+            item_age_days = None
+            if item.first_seen_timestamp:
+                item_ts = item.first_seen_timestamp
                 if current_time.tzinfo is None:
-                    current_time = current_time.replace(tzinfo=timezone.utc)
-                if earliest_timestamp.tzinfo is None:
-                    earliest_timestamp = earliest_timestamp.replace(tzinfo=timezone.utc)
+                    c_time = current_time.replace(tzinfo=timezone.utc)
+                else:
+                    c_time = current_time
+                if item_ts.tzinfo is None:
+                    i_time = item_ts.replace(tzinfo=timezone.utc)
+                else:
+                    i_time = item_ts
+                item_age_days = max(0.0, (c_time - i_time).total_seconds() / 86400.0)
 
-                delta_seconds = (current_time - earliest_timestamp).total_seconds()
-                temporal_age_days = max(0.0, delta_seconds / 86400.0)
+            # Check if this item constitutes a recycled match
+            is_match = (sem_sim >= self.text_similarity_threshold) or (vis_sim >= 0.85)
+            if is_match and item_age_days is not None and item_age_days > 30.0:
+                recycled_content = True
+                if best_overall_match is None or max(sem_sim, vis_sim) > max(
+                    max_semantic_sim, max_visual_sim
+                ):
+                    best_overall_match = item
+                    earliest_timestamp = item.first_seen_timestamp
+                    temporal_age_days = item_age_days
 
-                # Flag as recycled if matching historical content is > 30 days old
-                if temporal_age_days > 30.0:
-                    recycled_content = True
-                    flags.append("RECYCLED_HISTORICAL_CONTENT_DETECTED")
-                    if matched_item.is_known_debunked_narrative:
-                        flags.append("MATCHES_KNOWN_DEBUNKED_VIRAL_NARRATIVE")
+            matches.append({
+                "item_id": item.item_id,
+                "text": item.text,
+                "visual_similarity": round(vis_sim, 4),
+                "semantic_similarity": round(sem_sim, 4),
+                "keyword_similarity": round(kw_sim, 4),
+                "historical_age_days": round(item_age_days, 1) if item_age_days is not None else None,
+                "first_seen_timestamp": item.first_seen_timestamp.isoformat() if item.first_seen_timestamp else None,
+                "is_known_debunked": item.is_known_debunked_narrative,
+                "source_context": item.source_context,
+            })
 
-        if max_hashtag_sim >= 0.60:
+        # Sort matches by strongest similarity descending
+        matches.sort(
+            key=lambda m: max(m["semantic_similarity"], m["visual_similarity"], m["keyword_similarity"]),
+            reverse=True,
+        )
+
+        if recycled_content:
+            flags.append("RECYCLED_HISTORICAL_CONTENT_DETECTED")
+            if best_overall_match and best_overall_match.is_known_debunked_narrative:
+                flags.append("MATCHES_KNOWN_DEBUNKED_VIRAL_NARRATIVE")
+
+        if max_keyword_sim >= 0.60:
             flags.append("HIGH_HASHTAG_COORDINATION")
 
         # ----------------------------------------------------------------------
-        # Step 8: Calibrated Similarity Score Calculation (0 - 100)
+        # Step 6: Calibrated Similarity Score Calculation (0 - 100)
         #
         # High score (75-100) = Original / fresh content context, no recycled hoaxes.
-        # Moderate score (50-74) = Sensational viral formatting or unverified novelty.
-        # Low score (0-49)   = Recycled debunked hoax or recirculated viral template.
+        # Moderate score (50-74) = Moderate similarity to past posts or sensational phrasing.
+        # Low score (0-49)   = Recycled debunked hoax or viral duplicate template.
         # ----------------------------------------------------------------------
         import re
         score = 85.0
 
         is_sensational_viral = bool(
-            re.search(r"\b(breaking|urgent|share to save lives|spread the word|secret cure|miracle cure|must share|watch before deleted|shocking)\b", text, re.I)
+            re.search(
+                r"\b(breaking|urgent|share to save lives|spread the word|secret cure|miracle cure|must share|watch before deleted|shocking)\b",
+                text,
+                re.I,
+            )
             or (text.count("!") >= 3)
             or (len(post_hashtags_set) >= 5)
         )
@@ -224,45 +280,51 @@ class SimilarContentAnalyzer:
             flags.append("SENSATIONAL_VIRAL_FORMATTING")
 
         if recycled_content:
-            # Penalty for recycling old narratives without context (up to 30 pts)
+            # Penalty for recirculating old content without attribution (up to 30 pts)
             score -= min(30.0, 15.0 + (min(365.0, temporal_age_days) / 365.0) * 15.0)
 
-            # Extra penalty if explicitly matched to a known debunked narrative (up to 30 pts)
-            if best_text_match and best_text_match.is_known_debunked_narrative:
+            # Heavy penalty if explicitly matched to a known debunked narrative (30 pts)
+            if best_overall_match and best_overall_match.is_known_debunked_narrative:
                 score -= 30.0
-        elif is_text_match or is_image_match:
+        elif max_semantic_sim >= self.text_similarity_threshold or max_visual_sim >= 0.85:
             # Minor penalty for high similarity to standard recent posts
-            score -= (max_text_sim * 15.0)
+            score -= (max_semantic_sim * 15.0)
 
         similarity_score = round(max(0.0, min(100.0, score)), 2)
-        match_status = "HISTORICAL_CORPUS_MATCH" if (is_text_match or is_image_match) else "NO_HISTORICAL_MATCH"
+        match_status = "HISTORICAL_CORPUS_MATCH" if (max_semantic_sim >= self.text_similarity_threshold or max_visual_sim >= 0.85) else "NO_HISTORICAL_MATCH"
 
         # ----------------------------------------------------------------------
-        # Step 9: Explanation Formulation
+        # Step 7: Explanation Formulation
         # ----------------------------------------------------------------------
         if recycled_content:
+            date_str = earliest_timestamp.strftime("%Y-%m-%d") if earliest_timestamp else "past archives"
             explanation = (
-                f"Content matches archived material in local corpus (text similarity: {max_text_sim:.2f}, img: {max_image_sim:.2f}) "
-                f"first seen {temporal_age_days:.0f} days ago ({earliest_timestamp.strftime('%Y-%m-%d')}). Note: Recycled content does not automatically prove malicious intent."
+                f"Content matches archived material in local reference corpus (semantic similarity: {max_semantic_sim:.2f}, visual: {max_visual_sim:.2f}) "
+                f"first seen {temporal_age_days:.0f} days ago ({date_str}). Note: Recycled content does not automatically prove malicious intent."
             )
         else:
             explanation = (
                 f"Content demonstrates high originality; no matching recycled narrative found in current {corpus_count}-item local historical corpus "
-                f"(max text similarity: {max_text_sim:.2f}, hashtag overlap: {max_hashtag_sim:.2f})."
+                f"(max semantic similarity: {max_semantic_sim:.2f}, visual similarity: {max_visual_sim:.2f}, keyword overlap: {max_keyword_sim:.2f})."
             )
 
         return {
+            "score": similarity_score,
             "similarity_score": similarity_score,
+            "recycled_content": recycled_content,
+            "visual_similarity": max_visual_sim,
+            "semantic_similarity": max_semantic_sim,
+            "keyword_similarity": max_keyword_sim,
+            "matches": matches,
+            "flags": flags,
+            "explanation": explanation,
             "status": match_status,
             "similar_content_count": len(historical_items),
             "corpus_size": corpus_count,
-            "text_similarity": max_text_sim,
-            "image_similarity": max_image_sim,
-            "hashtag_similarity": max_hashtag_sim,
-            "recycled_content": recycled_content,
+            "text_similarity": max_semantic_sim,
+            "image_similarity": max_visual_sim,
+            "hashtag_similarity": max_keyword_sim,
             "earliest_matching_timestamp": earliest_timestamp.isoformat() if earliest_timestamp else None,
-            "flags": flags,
-            "explanation": explanation,
         }
 
 

@@ -24,20 +24,22 @@ class SimpleClaimExtractor(BaseClaimExtractor):
     GREETING_MARKERS = [
         r"^(hello|hi|hey|good\s+(morning|afternoon|evening|day|night)|greetings|welcome|howdy|sup)\b",
         r"^(have\s+a\s+(great|nice|wonderful|good)\s+day)\b",
-        r"^(thanks|thank\s+you|cheers)\b",
+        r"^(thanks|thank\s+you|cheers|bye|goodbye|see\s+ya)\b",
     ]
 
     # Phrases indicating subjective opinions rather than verifiable factual claims
     OPINION_MARKERS = [
-        r"^(i\s+(think|feel|believe|guess|suppose|doubt|wish|hope|love|hate|prefer))\b",
-        r"^(in\s+my\s+(opinion|view|perspective|eyes))\b",
+        r"^(i\s+(really|strongly|truly|personally)?\s*(don't\s+|do\s+not\s+)?(think|feel|believe|guess|suppose|doubt|wish|hope|love|hate|prefer))\b",
+        r"^(in\s+my\s+(honest\s+|personal\s+)?(opinion|view|perspective|eyes))\b",
         r"^(it\s+seems\s+(to\s+me|like))\b",
         r"^(personally|maybe|perhaps|probably|to\s+be\s+honest|honestly|imo|imho)\b",
-        r"^(my\s+favorite|i\s+like|i\s+dislike)\b",
+        r"^(my\s+(favorite|opinion|view)|i\s+like|i\s+dislike)\b",
         r"^(something\s+(we|you|i|everyone|all)\s+(can|should|could|might|must|ought|need))\b",
         r"^(can\s+we\s+all\s+agree|we\s+(can|should|all)\s+(all\s+)?agree)\b",
         r"^(we\s+all\s+know\s+(what|how|why))\b",
         r"^(just\s+(saying|wondering|my\s+two\s+cents|wanted\s+to\s+share))\b",
+        r"^(this|that|it)\s+is\s+(just\s+)?(my\s+)?(opinion|view)\b",
+        r"^(this|that|it)\s+is\s+(the\s+)?(best|worst|greatest|most\s+overrated|most\s+underrated)\b",
     ]
 
     # Obvious jokes, sarcasm, or humor markers
@@ -49,14 +51,10 @@ class SimpleClaimExtractor(BaseClaimExtractor):
     # Interrogatives indicating questions
     QUESTION_STARTERS = [
         r"^(what|why|how|who|where|when|which|whose|whom)\b",
-        r"^(is\s+(it|this|there|that|he|she))\b",
-        r"^(are\s+(they|you|we|there))\b",
-        r"^(can\s+(we|anyone|you|someone))\b",
-        r"^(could\s+(it|this|we|anyone))\b",
-        r"^(does\s+(anyone|it|this))\b",
-        r"^(do\s+(you|we|they))\b",
-        r"^(should\s+(we|i|they))\b",
-        r"^(would\s+(it|you|anyone))\b",
+        r"^(is|are|was|were)\s+(it|this|that|there|they|you|we|he|she|anyone|someone)\b",
+        r"^(can|could|should|would|will|shall|might|may)\s+(it|this|that|there|they|you|we|he|she|i|anyone|someone)\b",
+        r"^(do|does|did)\s+(it|this|that|there|they|you|we|he|she|anyone|someone)\b",
+        r"^(have|has|had)\s+(it|this|that|there|they|you|we|he|she|anyone|someone)\b",
     ]
 
     # Common social media clickbait / news alert prefixes to strip from claims
@@ -76,8 +74,8 @@ class SimpleClaimExtractor(BaseClaimExtractor):
         """Evaluate if a candidate sentence is a greeting, question, opinion, or joke."""
         lower = sentence.lower().strip()
 
-        # 1. Questions: ends with question mark or begins with question starter
-        if raw_original.strip().endswith("?") or lower.endswith("?"):
+        # 1. Questions: ends with question mark or contains question starter
+        if raw_original.strip().endswith("?") or lower.endswith("?") or "?" in raw_original:
             return True
         for q_pattern in self.QUESTION_STARTERS:
             if re.search(q_pattern, lower):
@@ -99,6 +97,19 @@ class SimpleClaimExtractor(BaseClaimExtractor):
                 return True
 
         return False
+
+    def classify_filtered_reason(self, text: str) -> str:
+        """Classify why a text has no verifiable factual claims (e.g. OPINION, QUESTION, GREETING, EMPTY)."""
+        if not text or not text.strip():
+            return "EMPTY"
+        lower = text.lower().strip()
+        if "?" in text or any(re.search(p, lower) for p in self.QUESTION_STARTERS):
+            return "QUESTION"
+        if any(re.search(p, lower) for p in self.OPINION_MARKERS):
+            return "OPINION"
+        if any(re.search(p, lower) for p in self.GREETING_MARKERS):
+            return "GREETING"
+        return "NON_FACTUAL"
 
     def extract_claims(self, text: str, max_claims: int = 3) -> list[str]:
         """Extract verifiable factual statements from text, returning empty list if none found."""

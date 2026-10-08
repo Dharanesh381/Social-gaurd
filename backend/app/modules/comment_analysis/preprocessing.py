@@ -2,6 +2,7 @@
 
 import math
 import re
+from typing import Any
 
 import emoji
 
@@ -47,22 +48,26 @@ def normalize_text_for_exact_match(text: str) -> str:
     return cleaned
 
 
-def compute_emoji_features(comments_text: list[str]) -> dict[str, float]:
-    """Calculate emoji presence ratio, total emoji count, and Shannon entropy.
+def compute_emoji_features(comments_text: list[str]) -> dict[str, Any]:
+    """Calculate emoji presence ratio, total emoji count, distribution, and Shannon entropy.
 
     Returns:
         Dict containing:
         - total_emojis: Total emoji count across all comments
+        - unique_emojis: Number of distinct emojis observed
         - emoji_comment_ratio: Proportion of comments containing at least 1 emoji (0.0 to 1.0)
         - emoji_entropy: Shannon entropy across emoji frequencies (0.0 if <=1 distinct emoji)
         - excessive_emoji_ratio: Proportion of comments containing >= 5 emojis
+        - emoji_distribution: Dictionary of most frequent emojis and their frequencies
     """
     if not comments_text:
         return {
             "total_emojis": 0.0,
+            "unique_emojis": 0,
             "emoji_comment_ratio": 0.0,
             "emoji_entropy": 0.0,
             "excessive_emoji_ratio": 0.0,
+            "emoji_distribution": {},
         }
 
     total_comments = len(comments_text)
@@ -71,7 +76,10 @@ def compute_emoji_features(comments_text: list[str]) -> dict[str, float]:
     emoji_counts: dict[str, int] = {}
     total_emojis = 0
 
-    for text in comments_text:
+    for raw in comments_text:
+        if not raw:
+            continue
+        text = str(raw)
         emojis = extract_emojis(text)
         count = len(emojis)
         total_emojis += count
@@ -91,9 +99,14 @@ def compute_emoji_features(comments_text: list[str]) -> dict[str, float]:
             p_i = count / total_emojis
             entropy -= p_i * math.log2(p_i)
 
+    # Top emoji frequencies
+    sorted_dist = dict(sorted(emoji_counts.items(), key=lambda x: x[1], reverse=True)[:10])
+
     return {
         "total_emojis": float(total_emojis),
+        "unique_emojis": len(emoji_counts),
         "emoji_comment_ratio": round(comments_with_emoji / total_comments, 4),
         "emoji_entropy": round(entropy, 4),
         "excessive_emoji_ratio": round(excessive_emoji_comments / total_comments, 4),
+        "emoji_distribution": sorted_dist,
     }

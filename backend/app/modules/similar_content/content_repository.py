@@ -14,6 +14,7 @@ class HistoricalContentItem(BaseModel):
     hashtags: list[str] = []
     keywords: list[str] = []
     image_phash: str | None = None
+    image_dhash: str | None = None
     first_seen_timestamp: datetime
     is_known_debunked_narrative: bool = False
     source_context: str = ""
@@ -28,6 +29,7 @@ class BaseContentRepository(ABC):
         query_text: str,
         hashtags: list[str],
         image_phash: str | None = None,
+        image_dhash: str | None = None,
         top_k: int = 5,
     ) -> list[HistoricalContentItem]:
         pass
@@ -47,6 +49,7 @@ class InMemoryContentRepository(BaseContentRepository):
         query_text: str,
         hashtags: list[str],
         image_phash: str | None = None,
+        image_dhash: str | None = None,
         top_k: int = 5,
     ) -> list[HistoricalContentItem]:
         # Returns all active repository records for similarity evaluation
@@ -62,6 +65,7 @@ class InMemoryContentRepository(BaseContentRepository):
                 hashtags=["#space", "#mars", "#nasa", "#science"],
                 keywords=["nasa", "rovers", "liquid", "water", "martian", "polar", "radar"],
                 image_phash="a1b2c3d4e5f60718",
+                image_dhash="1a2b3c4d5e6f7081",
                 first_seen_timestamp=datetime(2021, 5, 20, 12, 0, 0, tzinfo=timezone.utc),
                 is_known_debunked_narrative=False,
                 source_context="Verified 2021 scientific radar research announcement",
@@ -72,6 +76,7 @@ class InMemoryContentRepository(BaseContentRepository):
                 hashtags=["#breaking", "#lockdown", "#emergency", "#airport"],
                 keywords=["governments", "emergency", "lockdown", "protocols", "international", "airports", "mystery", "virus"],
                 image_phash="f0e1d2c3b4a59687",
+                image_dhash="0f1e2d3c4b5a6978",
                 first_seen_timestamp=datetime(2020, 3, 15, 8, 30, 0, tzinfo=timezone.utc),
                 is_known_debunked_narrative=True,
                 source_context="Debunked 2020 recycled viral hoax",
@@ -82,6 +87,7 @@ class InMemoryContentRepository(BaseContentRepository):
                 hashtags=["#crypto", "#airdrop", "#giveaway", "#ethereum", "#free"],
                 keywords=["free", "crypto", "airdrop", "giveaway", "wallet", "ethereum"],
                 image_phash="1122334455667788",
+                image_dhash="8877665544332211",
                 first_seen_timestamp=datetime(2022, 1, 10, 0, 0, 0, tzinfo=timezone.utc),
                 is_known_debunked_narrative=True,
                 source_context="Recycled cryptocurrency doubling scam template",

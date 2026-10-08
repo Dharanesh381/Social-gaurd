@@ -3,6 +3,7 @@
 import logging
 import threading
 from collections import OrderedDict
+from typing import Any
 
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
@@ -142,4 +143,128 @@ def compute_semantic_similarity_features(
         "max_similarity": round(max(0.0, min(1.0, max_sim)), 4),
         "near_duplicate_ratio": round(near_dup_ratio, 4),
         "near_duplicate_comment_ratio": round(near_dup_comment_ratio, 4),
+    }
+
+
+def compute_semantic_clusters(
+    cleaned_texts: list[str],
+    similarity_threshold: float = 0.80,
+    custom_model=None,
+) -> dict[str, Any]:
+    """Group comments into semantic clusters using Sentence-BERT embeddings.
+
+    Uses Agglomerative Clustering on pairwise cosine distance matrix.
+    Comments with cosine similarity >= similarity_threshold are grouped into cohesive clusters.
+
+    Returns:
+        Dict containing:
+        - num_clusters: Total distinct clusters identified
+        - total_clusters: Alias for num_clusters
+        - coordinated_cluster_count: Number of clusters containing >= 2 comments (bot farm / copypasta clusters)
+        - largest_cluster_size: Maximum comments in a single cluster
+        - largest_cluster_ratio: Proportion of comments belonging to the largest cluster
+        - clusters: List of cluster objects with cluster_id, size, sample_text, comment_indices, cohesion
+    """
+    n = len(cleaned_texts)
+    if n == 0:
+        return {
+            "num_clusters": 0,
+            "total_clusters": 0,
+            "coordinated_cluster_count": 0,
+            "largest_cluster_size": 0,
+            "largest_cluster_ratio": 0.0,
+            "clusters": [],
+        }
+
+    if n == 1:
+        return {
+            "num_clusters": 1,
+            "total_clusters": 1,
+            "coordinated_cluster_count": 0,
+            "largest_cluster_size": 1,
+            "largest_cluster_ratio": 1.0,
+            "clusters": [
+                {
+                    "cluster_id": 0,
+                    "size": 1,
+                    "sample_text": cleaned_texts[0][:150],
+                    "comment_indices": [0],
+                    "cohesion": 1.0,
+                }
+            ],
+        }
+
+    model = custom_model or get_sbert_model()
+    embeddings = get_cached_embeddings(cleaned_texts, model=model)
+    sim_matrix = cosine_similarity(embeddings)
+    dist_matrix = np.clip(1.0 - sim_matrix, 0.0, 2.0)
+
+    dist_threshold = max(0.01, 1.0 - similarity_threshold)
+
+    try:
+        from sklearn.cluster import AgglomerativeClustering
+
+        clustering = AgglomerativeClustering(
+            metric="precomputed",
+            linkage="average",
+            distance_threshold=dist_threshold,
+            n_clusters=None,
+        )
+        labels = clustering.fit_predict(dist_matrix)
+    except Exception as exc:
+        logger.warning("Clustering fallback due to error: %s", exc)
+        # Fallback: connected components on adjacency matrix (sim >= similarity_threshold)
+        adj = (sim_matrix >= similarity_threshold).astype(int)
+        visited = set()
+        labels = np.zeros(n, dtype=int)
+        cur_label = 0
+        for i in range(n):
+            if i not in visited:
+                queue = [i]
+                visited.add(i)
+                while queue:
+                    node = queue.pop(0)
+                    labels[node] = cur_label
+                    for neighbor in np.where(adj[node])[0]:
+                        if neighbor not in visited:
+                            visited.add(neighbor)
+                            queue.append(neighbor)
+                cur_label += 1
+
+    # Aggregate clusters
+    cluster_groups: dict[int, list[int]] = {}
+    for idx, lbl in enumerate(labels):
+        cluster_groups.setdefault(int(lbl), []).append(idx)
+
+    cluster_list = []
+    for c_id, indices in cluster_groups.items():
+        size = len(indices)
+        if size > 1:
+            sub_sims = sim_matrix[np.ix_(indices, indices)]
+            triu_sub = sub_sims[np.triu_indices(size, k=1)]
+            cohesion = float(np.mean(triu_sub)) if len(triu_sub) > 0 else 1.0
+        else:
+            cohesion = 1.0
+
+        cluster_list.append({
+            "cluster_id": c_id,
+            "size": size,
+            "sample_text": cleaned_texts[indices[0]][:150],
+            "comment_indices": indices,
+            "cohesion": round(cohesion, 4),
+        })
+
+    # Sort clusters by size descending
+    cluster_list.sort(key=lambda x: x["size"], reverse=True)
+    coordinated_count = sum(1 for c in cluster_list if c["size"] >= 2)
+    largest_size = cluster_list[0]["size"] if cluster_list else 0
+    largest_ratio = round(largest_size / n, 4) if n > 0 else 0.0
+
+    return {
+        "num_clusters": len(cluster_list),
+        "total_clusters": len(cluster_list),
+        "coordinated_cluster_count": coordinated_count,
+        "largest_cluster_size": largest_size,
+        "largest_cluster_ratio": largest_ratio,
+        "clusters": cluster_list,
     }

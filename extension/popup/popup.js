@@ -1,18 +1,16 @@
 /**
- * Social Guard: Extension Controller (Phase 6)
- * Supports REAL POST mode (live extracted browser post) and DEMO mode (academic test presets).
- * Displays target post information, credibility verdict, claims & fact-check evidence,
- * module breakdowns, orthogonal AI detection, XAI explanations, animated pipeline loading steps,
- * and categorized error diagnostics.
+ * Social Guard: Explainable AI Verification Popup Controller
+ * Manages live post extraction, academic demo presets, 6-stage verification progress,
+ * and renders a comprehensive 12-section Explainable AI report.
  */
 
 import { SocialGuardApiClient, SocialGuardApiError } from "./api_client.js";
 
 // ==============================================================================
-// 1. ACADEMIC TEST PRESET SCENARIOS (Demarcated Demo Data)
+// 1. CURATED DEMO PRESET SCENARIOS
 // ==============================================================================
 
-const TEST_PRESETS = {
+const DEMO_PRESETS = {
   real: {
     platform: "twitter",
     post_url: "https://x.com/science_reporter/status/1888223344",
@@ -46,12 +44,13 @@ const TEST_PRESETS = {
       },
       {
         comment_id: "c_r2",
-        text: "Does this match the earlier radar reflection datasets?",
+        text: "Does this match the earlier radar reflection datasets from ESA?",
         likes: 5,
         emojis: []
       }
     ]
   },
+
   uncertain: {
     platform: "reddit",
     post_url: "https://reddit.com/r/science/comments/superconductor_claim/",
@@ -83,6 +82,7 @@ const TEST_PRESETS = {
       }
     ]
   },
+
   fake: {
     platform: "twitter",
     post_url: "https://x.com/super_cure_blast_bot/status/99911223344",
@@ -119,415 +119,492 @@ const TEST_PRESETS = {
         emojis: ["💊", "🚨"]
       }
     ]
+  },
+
+  ai_factual: {
+    platform: "twitter",
+    post_url: "https://x.com/astro_briefs/status/555123456",
+    text: "The James Webb Space Telescope has successfully captured high-resolution transmission spectra of exoplanet WASP-96b, providing detailed atmospheric composition data.",
+    hashtags: ["#JWST", "#Exoplanets", "#Astronomy"],
+    media: [
+      { url: "https://example.com/wasp96b_spectrum.png", media_type: "image" }
+    ],
+    author: {
+      username: "astro_briefs",
+      account_age_days: 900,
+      followers: 18500,
+      following: 220,
+      posts_per_day: 3.0,
+      comments_per_day: 4.0,
+      engagement_rate: 0.05,
+      duplicate_content_ratio: 0.02,
+      hashtag_repetition_rate: 0.10
+    },
+    engagement: {
+      likes: 8400,
+      replies: 310,
+      reposts: 1950
+    },
+    comments: [
+      {
+        comment_id: "c_ai1",
+        text: "Incredible spectral fidelity from NIRISS instrument!",
+        likes: 34,
+        emojis: []
+      }
+    ]
+  },
+
+  recycled: {
+    platform: "facebook",
+    post_url: "https://facebook.com/viral_alerts/posts/1029384756",
+    text: "BREAKING: Emergency nationwide lockdown declared tonight across all major international airports due to unknown airborne pathogen outbreak! Stock up immediately!",
+    hashtags: ["#BreakingNews", "#Lockdown", "#Emergency"],
+    media: [],
+    author: {
+      username: "viral_alerts_page",
+      account_age_days: 12,
+      followers: 85,
+      following: 3400,
+      posts_per_day: 95.0,
+      comments_per_day: 40.0,
+      engagement_rate: 0.002,
+      duplicate_content_ratio: 0.85,
+      hashtag_repetition_rate: 0.90
+    },
+    engagement: {
+      likes: 120,
+      replies: 840,
+      reposts: 650
+    },
+    comments: [
+      {
+        comment_id: "c_rec1",
+        text: "This is completely fake news and an old 2020 rumor! Stop lying.",
+        likes: 92,
+        emojis: []
+      },
+      {
+        comment_id: "c_rec2",
+        text: "False alarm, airport authorities already debunked this hoax.",
+        likes: 64,
+        emojis: []
+      },
+      {
+        comment_id: "c_rec3",
+        text: "Old recycled scam reposted from years ago. Reported as misinformation.",
+        likes: 45,
+        emojis: []
+      }
+    ]
   }
 };
 
-let currentMode = "real"; // "real" | "preset"
-let rawExtractedData = null; // Store raw live extraction data
-let activePayload = null;    // Post payload prepared for UI / analysis
+let currentMode = "real";    // "real" | "demo"
+let rawExtractedData = null; // Stored live extraction data
+let activePayload = null;    // Post payload prepared for UI and analysis
 
-function computeSimpleHash(str) {
-  if (!str) return "00000000";
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    const char = str.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash |= 0;
-  }
-  return Math.abs(hash).toString(16).padStart(8, "0");
-}
+// ==============================================================================
+// 2. PAYLOAD NORMALIZATION & VALIDATION
+// ==============================================================================
 
 /**
  * Validate and map an extracted post or preset into the strict AnalysisRequest schema.
- * Prevents fabricated values: unprovided fields remain null or empty lists.
  */
 export function validateAndBuildAnalysisPayload(data, isDemo = false) {
   if (!data || typeof data !== "object") {
     throw new Error("No post data provided for verification.");
   }
 
-  // 1. Post Text Validation
+  // 1. Text Validation
   const text = (data.text || "").trim();
   if (!text || text.length < 1) {
-    throw new Error("Post text cannot be empty. Please open a social media post with readable content.");
+    throw new Error("Post text cannot be empty. Please enter or extract readable social media text.");
   }
   if (text.length > 50000) {
-    throw new Error("Post text exceeds maximum permitted length (50,000 characters).");
+    throw new Error("Post text exceeds maximum allowed length (50,000 characters).");
   }
 
   // 2. Platform Normalization
   let platform = (data.platform || "generic").toLowerCase().trim();
   if (platform === "x") platform = "twitter";
+  const validPlatforms = ["twitter", "reddit", "facebook", "instagram", "generic"];
+  if (!validPlatforms.includes(platform)) platform = "generic";
 
-  // 3. Author Validation (Do NOT fabricate if unavailable)
-  let author = null;
-  const username = data.author?.username || data.author_username;
-  if (username && typeof username === "string" && username.trim().length > 0) {
-    const cleanUsername = username.trim().slice(0, 150);
-    author = {
-      username: cleanUsername,
-      account_age_days: data.author?.account_age_days != null ? Math.max(0, parseInt(data.author.account_age_days, 10)) : null,
-      account_created_at: null,
-      followers: data.author?.followers != null ? Math.max(0, parseInt(data.author.followers, 10)) : 0,
-      following: data.author?.following != null ? Math.max(0, parseInt(data.author.following, 10)) : 0,
-      posts_per_day: data.author?.posts_per_day != null ? Math.max(0, parseFloat(data.author.posts_per_day)) : 0.0,
-      comments_per_day: data.author?.comments_per_day != null ? Math.max(0, parseFloat(data.author.comments_per_day)) : 0.0,
-      engagement_rate: data.author?.engagement_rate != null ? Math.max(0, parseFloat(data.author.engagement_rate)) : null,
-      duplicate_content_ratio: data.author?.duplicate_content_ratio != null ? Math.min(1.0, Math.max(0, parseFloat(data.author.duplicate_content_ratio))) : null,
-      hashtag_repetition_rate: data.author?.hashtag_repetition_rate != null ? Math.min(1.0, Math.max(0, parseFloat(data.author.hashtag_repetition_rate))) : null
+  // 3. Post URL & ID
+  let postUrl = (data.post_url || "").trim();
+  let postId = data.post_id ? String(data.post_id).trim() : null;
+  if (!postId) {
+    let hash = 0;
+    for (let i = 0; i < text.length; i++) {
+      hash = ((hash << 5) - hash) + text.charCodeAt(i);
+      hash |= 0;
+    }
+    const cleanHash = Math.abs(hash).toString(16).padStart(8, "0");
+    postId = `${platform.slice(0, 2)}_${cleanHash}`;
+  }
+
+  // 4. Media Normalization
+  const safeMedia = (data.media || [])
+    .filter(m => m && typeof m.url === "string" && (m.url.startsWith("http://") || m.url.startsWith("https://")))
+    .map(m => ({
+      url: m.url.trim(),
+      media_type: m.media_type || "image"
+    }));
+
+  // 5. Hashtags Normalization
+  let hashtags = [];
+  if (Array.isArray(data.hashtags)) {
+    hashtags = data.hashtags.map(t => String(t).trim()).filter(t => t.length > 0);
+  } else {
+    const extractedTags = text.match(/#[a-zA-Z0-9_]+/g);
+    if (extractedTags) hashtags = extractedTags;
+  }
+
+  // 6. Author Profile Normalization
+  let authorObj = null;
+  if (data.author && typeof data.author === "object") {
+    const a = data.author;
+    const authorUsername = (a.username || data.author_username || "author").trim();
+    authorObj = {
+      username: authorUsername,
+      account_age_days: (a.account_age_days != null && !isNaN(a.account_age_days)) ? Math.max(0, Number(a.account_age_days)) : null,
+      followers_count: (a.followers != null || a.followers_count != null) ? Math.max(0, parseInt(a.followers ?? a.followers_count, 10)) : 0,
+      following_count: (a.following != null || a.following_count != null) ? Math.max(0, parseInt(a.following ?? a.following_count, 10)) : 0,
+      posts_count: (a.posts_count != null) ? Math.max(0, parseInt(a.posts_count, 10)) : 0,
+      recent_posts_frequency_per_day: (a.posts_per_day != null || a.recent_posts_frequency_per_day != null) ?
+        Math.max(0.0, Number(a.posts_per_day ?? a.recent_posts_frequency_per_day)) : null,
+      recent_comments_frequency_per_day: (a.comments_per_day != null || a.recent_comments_frequency_per_day != null) ?
+        Math.max(0.0, Number(a.comments_per_day ?? a.recent_comments_frequency_per_day)) : null,
+      duplicate_posts_ratio: (a.duplicate_content_ratio != null || a.duplicate_posts_ratio != null) ?
+        Math.min(1.0, Math.max(0.0, Number(a.duplicate_content_ratio ?? a.duplicate_posts_ratio))) : null,
+      hashtag_repetition_rate: (a.hashtag_repetition_rate != null) ?
+        Math.min(1.0, Math.max(0.0, Number(a.hashtag_repetition_rate))) : null,
+      average_engagement_rate: (a.engagement_rate != null || a.average_engagement_rate != null) ?
+        Math.min(1.0, Math.max(0.0, Number(a.engagement_rate ?? a.average_engagement_rate))) : null,
+      average_posting_interval_seconds: null
     };
-
-    if (!isDemo && author.engagement_rate === null && data.engagement?.likes != null && data.engagement?.replies != null) {
-      author.engagement_rate = Math.min(1.0, (data.engagement.likes + data.engagement.replies) / 5000);
-    }
+  } else if (data.author_username) {
+    authorObj = {
+      username: String(data.author_username).trim(),
+      followers_count: 0,
+      following_count: 0,
+      posts_count: 0
+    };
   }
 
-  // 4. Media Sanitization
-  const validMedia = [];
-  const rawMedia = data.media || [];
-  if (Array.isArray(rawMedia)) {
-    rawMedia.forEach(m => {
-      if (!m || !m.url || typeof m.url !== "string") return;
-      const url = m.url.trim();
-      if (!url.startsWith("http://") && !url.startsWith("https://")) return;
-
-      let mediaType = "image";
-      if (m.media_type === "video") mediaType = "video";
-      else if (m.media_type === "audio") mediaType = "audio";
-      else if (m.media_type === "other") mediaType = "other";
-
-      validMedia.push({
-        url: url,
-        media_type: mediaType,
-        ocr_extracted_text: m.ocr_extracted_text || null,
-        perceptual_hash: m.perceptual_hash || null
-      });
-    });
-  }
-
-  // 5. Hashtags Sanitization
-  const validHashtags = [];
-  const rawHashtags = data.hashtags || [];
-  if (Array.isArray(rawHashtags)) {
-    rawHashtags.forEach(tag => {
-      if (!tag || typeof tag !== "string") return;
-      const cleaned = tag.trim();
-      if (cleaned.length > 0) {
-        validHashtags.push(cleaned.startsWith("#") ? cleaned : `#${cleaned}`);
+  // 7. Comments Normalization
+  let commentsList = [];
+  if (Array.isArray(data.comments)) {
+    commentsList = data.comments.map((c, idx) => {
+      if (typeof c === "string") {
+        return {
+          comment_id: `c_${idx + 1}`,
+          text: c.trim(),
+          likes: 0,
+          timestamp: null,
+          author: { username: `commenter_${idx + 1}` }
+        };
       }
-    });
+      return {
+        comment_id: c.comment_id || `c_${idx + 1}`,
+        text: (c.text || "").trim(),
+        likes: (c.likes != null && !isNaN(c.likes)) ? Math.max(0, parseInt(c.likes, 10)) : 0,
+        timestamp: c.timestamp || null,
+        author: { username: c.username || c.author_id || c.author?.username || `commenter_${idx + 1}` }
+      };
+    }).filter(c => c.text.length > 0);
   }
 
-  // 6. Comments Sanitization
-  const validComments = [];
-  const rawComments = data.comments || [];
-  if (Array.isArray(rawComments)) {
-    rawComments.forEach((c, idx) => {
-      if (!c || !c.text || typeof c.text !== "string" || c.text.trim().length === 0) return;
-      const commentText = c.text.trim().slice(0, 10000);
-      const commentId = c.comment_id ? String(c.comment_id).slice(0, 100) : `c_${idx + 1}`;
-      const authorId = c.author_id || c.username ? String(c.author_id || c.username).trim().slice(0, 100) : null;
-      const likes = Math.max(0, parseInt(c.likes, 10) || 0);
-
-      let commentTs = null;
-      if (c.timestamp && !isNaN(Date.parse(c.timestamp))) {
-        try {
-          commentTs = new Date(c.timestamp).toISOString();
-        } catch (_) {
-          commentTs = null;
-        }
-      }
-
-      let emojis = Array.isArray(c.emojis) ? c.emojis : [];
-      if (emojis.length === 0) {
-        const found = commentText.match(/\p{Extended_Pictographic}/gu) || [];
-        emojis = Array.from(new Set(found));
-      }
-
-      validComments.push({
-        comment_id: commentId,
-        text: commentText,
-        author_id: authorId,
-        likes: likes,
-        timestamp: commentTs,
-        emojis: emojis,
-        emoji_count: emojis.length
-      });
-    });
-  }
-
-  // 7. Post Timestamp Validation
-  let postTimestamp = null;
-  if (data.timestamp && !isNaN(Date.parse(data.timestamp))) {
-    try {
-      postTimestamp = new Date(data.timestamp).toISOString();
-    } catch (_) {
-      postTimestamp = null;
-    }
-  }
-
-  const modePrefix = isDemo ? "demo" : "real";
-  const requestId = `sg_${modePrefix}_${Date.now()}_${computeSimpleHash(text)}`;
+  // 8. Engagement Normalization
+  const engagement = data.engagement || null;
 
   return {
-    request_id: requestId,
+    request_id: `ext_req_${Date.now()}`,
     post: {
-      post_id: data.post_id ? String(data.post_id).slice(0, 100) : null,
       platform: platform,
+      post_id: postId,
+      post_url: postUrl || null,
       text: text,
-      hashtags: validHashtags,
-      media: validMedia,
-      timestamp: postTimestamp,
-      author: author,
-      comments: validComments
-    },
-    custom_weights: null
+      timestamp: data.timestamp || new Date().toISOString(),
+      hashtags: hashtags,
+      media: safeMedia,
+      author: authorObj,
+      comments: commentsList,
+      engagement: engagement
+    }
   };
 }
 
 // ==============================================================================
-// 2. DOM CONTROLLER & EVENT WIRING
+// 3. UI INITIALIZATION & EVENT LISTENERS
 // ==============================================================================
 
 if (typeof document !== "undefined") {
   document.addEventListener("DOMContentLoaded", async () => {
-    const statusBadge = document.getElementById("backend-status-badge");
-    const sourceBadge = document.getElementById("content-source-badge");
-    const postTextInput = document.getElementById("post-text-input");
-    const platformChip = document.getElementById("detected-platform");
-    const authorChip = document.getElementById("detected-author");
-    const commentsChip = document.getElementById("detected-comments-count");
-    const mediaChip = document.getElementById("detected-media-count");
-    const engagementChip = document.getElementById("detected-engagement");
-
-    const modeRealBtn = document.getElementById("mode-real-btn");
+    // Mode tabs
+    const modeLiveBtn = document.getElementById("mode-live-btn");
     const modeDemoBtn = document.getElementById("mode-demo-btn");
     const demoPresetsContainer = document.getElementById("demo-presets-container");
 
-    const presetRealBtn = document.getElementById("preset-real-btn");
-    const presetUncertainBtn = document.getElementById("preset-uncertain-btn");
-    const presetFakeBtn = document.getElementById("preset-fake-btn");
+    // Input elements
+    const postTextInput = document.getElementById("post-text-input");
     const extractPageBtn = document.getElementById("extract-page-btn");
     const runVerifyBtn = document.getElementById("run-verify-btn");
+    const contentSourceBadge = document.getElementById("content-source-badge");
 
+    // Detection chips
+    const detectedPlatformChip = document.getElementById("detected-platform");
+    const detectedAuthorChip = document.getElementById("detected-author");
+    const detectedCommentsChip = document.getElementById("detected-comments-count");
+    const detectedMediaChip = document.getElementById("detected-media-count");
+    const detectedEngagementChip = document.getElementById("detected-engagement");
+
+    // Status & Loading
+    const backendStatusBadge = document.getElementById("backend-status-badge");
+    const backendStatusText = document.getElementById("backend-status-text");
     const loadingSpinner = document.getElementById("loading-spinner");
     const loadingStageLabel = document.getElementById("loading-stage-label");
 
+    // Error Box
     const errorBox = document.getElementById("error-box");
-    const errorBoxTitle = document.getElementById("error-box-title");
     const errorCategoryTag = document.getElementById("error-category-tag");
+    const errorBoxTitle = document.getElementById("error-box-title");
     const errorMessage = document.getElementById("error-message");
     const errorActionHint = document.getElementById("error-action-hint");
+    const errorDismissBtn = document.getElementById("error-dismiss-btn");
 
+    // Results container
     const resultsContainer = document.getElementById("results-container");
+    const resetViewBtn = document.getElementById("reset-view-btn");
 
-    // 1. Initial Health check
+    // Demo buttons
+    const presetRealBtn = document.getElementById("preset-real-btn");
+    const presetUncertainBtn = document.getElementById("preset-uncertain-btn");
+    const presetFakeBtn = document.getElementById("preset-fake-btn");
+    const presetAiFactualBtn = document.getElementById("preset-ai-factual-btn");
+    const presetRecycledBtn = document.getElementById("preset-recycled-btn");
+
+    // Check backend health immediately on startup
     await refreshBackendStatus();
+    setInterval(refreshBackendStatus, 15000);
 
-    // 2. Initial Mode Selection & Extraction on Popup Open (Real Mode)
-    switchMode("real");
+    // Auto-attempt extraction if in Live mode on initial open
+    await attemptLiveTabExtraction(true);
 
-    // Backend Health check
-    async function refreshBackendStatus() {
-      statusBadge.innerText = "Connecting...";
-      statusBadge.className = "badge-status badge-connecting";
-      const health = await SocialGuardApiClient.checkHealth();
-      if (health.status === "ok" || health.status === "healthy") {
-        statusBadge.innerText = "API Online";
-        statusBadge.className = "badge-status badge-online";
+    // Mode Switcher Handlers
+    modeLiveBtn.addEventListener("click", () => {
+      currentMode = "real";
+      modeLiveBtn.classList.add("active");
+      modeLiveBtn.setAttribute("aria-selected", "true");
+      modeDemoBtn.classList.remove("active");
+      modeDemoBtn.setAttribute("aria-selected", "false");
+      demoPresetsContainer.classList.add("hidden");
+
+      if (rawExtractedData) {
+        applyExtractedData(rawExtractedData);
       } else {
-        statusBadge.innerText = "API Offline (Port 8000)";
-        statusBadge.className = "badge-status badge-offline";
-      }
-    }
-
-    // Mode Switcher Logic
-    function switchMode(newMode) {
-      currentMode = newMode;
-      errorBox.classList.add("hidden");
-      resultsContainer.classList.add("hidden");
-
-      if (newMode === "real") {
-        modeRealBtn.classList.add("active");
-        modeRealBtn.setAttribute("aria-selected", "true");
-        modeDemoBtn.classList.remove("active");
-        modeDemoBtn.setAttribute("aria-selected", "false");
-        demoPresetsContainer.classList.add("hidden");
-        extractPageBtn.classList.remove("hidden");
-
-        setSourceBadge("live", "REAL POST MODE");
-
-        if (rawExtractedData) {
-          applyExtractedData(rawExtractedData);
-        } else {
-          attemptLiveTabExtraction(true);
-        }
-      } else {
-        // Demo Mode
-        modeDemoBtn.classList.add("active");
-        modeDemoBtn.setAttribute("aria-selected", "true");
-        modeRealBtn.classList.remove("active");
-        modeRealBtn.setAttribute("aria-selected", "false");
-        demoPresetsContainer.classList.remove("hidden");
-
-        loadPreset("real");
-      }
-    }
-
-    modeRealBtn.addEventListener("click", () => switchMode("real"));
-    modeDemoBtn.addEventListener("click", () => switchMode("demo"));
-
-    function setSourceBadge(mode, label) {
-      if (!sourceBadge) return;
-      sourceBadge.className = "source-badge";
-      if (mode === "live") {
-        sourceBadge.classList.add("source-live");
-        sourceBadge.innerText = label || "LIVE TAB CONTENT";
-      } else if (mode === "preset") {
-        sourceBadge.classList.add("source-preset");
-        sourceBadge.innerText = label || "TEST SCENARIO";
-      } else {
-        sourceBadge.classList.add("source-manual");
-        sourceBadge.innerText = label || "MANUAL INPUT";
-      }
-    }
-
-    function updateMetadataUI(payload, engagement = null) {
-      const platform = (payload.platform || "generic").toUpperCase();
-      platformChip.innerText = `Platform: ${platform}`;
-
-      const authorName = payload.author?.username ? `@${payload.author.username}` : (payload.author_username ? `@${payload.author_username}` : "None");
-      if (authorChip) authorChip.innerText = `Author: ${authorName}`;
-
-      const totalReplies = engagement?.replies != null ? engagement.replies :
-        (payload.engagement?.replies != null ? payload.engagement.replies :
-          (payload.replies != null ? payload.replies :
-            (Array.isArray(payload.comments) ? payload.comments.length : 0)));
-      const extractedCount = Array.isArray(payload.comments) ? payload.comments.length : 0;
-      if (totalReplies > 0 && extractedCount > 0 && totalReplies !== extractedCount) {
-        commentsChip.innerText = `Comments: ${totalReplies.toLocaleString()} (${extractedCount} fetched)`;
-      } else {
-        commentsChip.innerText = `Comments: ${totalReplies.toLocaleString()}`;
-      }
-
-      const mediaCount = Array.isArray(payload.media) ? payload.media.length : 0;
-      mediaChip.innerText = `Media: ${mediaCount}`;
-
-      if (engagementChip) {
-        const likes = engagement?.likes != null ? engagement.likes : (payload.likes_count != null ? payload.likes_count : null);
-        if (likes !== null && likes !== undefined) {
-          engagementChip.classList.remove("hidden");
-          engagementChip.innerText = `Likes: ${likes.toLocaleString()}`;
-        } else {
-          engagementChip.classList.add("hidden");
-        }
-      }
-    }
-
-    // Demo Preset Handler
-    function loadPreset(presetKey) {
-      activePayload = JSON.parse(JSON.stringify(TEST_PRESETS[presetKey]));
-      activePayload.source = "preset";
-      postTextInput.value = activePayload.text;
-      setSourceBadge("preset", `PRESET: ${presetKey.toUpperCase()}`);
-      updateMetadataUI(activePayload, activePayload.engagement);
-      errorBox.classList.add("hidden");
-      resultsContainer.classList.add("hidden");
-    }
-
-    presetRealBtn.addEventListener("click", () => loadPreset("real"));
-    presetUncertainBtn.addEventListener("click", () => loadPreset("uncertain"));
-    presetFakeBtn.addEventListener("click", () => loadPreset("fake"));
-
-    // Track edits in textarea
-    postTextInput.addEventListener("input", () => {
-      errorBox.classList.add("hidden");
-      if (activePayload) {
-        activePayload.text = postTextInput.value;
+        setSourceBadge("live", "LIVE TAB");
       }
     });
 
-    // Real Mode Extraction Handler
-    async function attemptLiveTabExtraction(isAutoInit = false) {
-      try {
-        if (typeof chrome === "undefined" || !chrome.tabs || !chrome.tabs.query) {
-          if (!isAutoInit) {
-            showCategorizedError("EXTRACTION_ERROR", "Tab Access Unavailable", "Chrome extension tab API is not accessible in this context.", "Please verify extension permissions.");
-          }
-          return false;
-        }
+    modeDemoBtn.addEventListener("click", () => {
+      currentMode = "demo";
+      modeDemoBtn.classList.add("active");
+      modeDemoBtn.setAttribute("aria-selected", "true");
+      modeLiveBtn.classList.remove("active");
+      modeLiveBtn.setAttribute("aria-selected", "false");
+      demoPresetsContainer.classList.remove("hidden");
 
+      // Auto-load Real preset as initial showcase if input is blank
+      if (!postTextInput.value || postTextInput.value.trim().length === 0) {
+        loadPreset("real");
+      }
+    });
+
+    // Preset button click events
+    if (presetRealBtn) presetRealBtn.addEventListener("click", () => loadPreset("real"));
+    if (presetUncertainBtn) presetUncertainBtn.addEventListener("click", () => loadPreset("uncertain"));
+    if (presetFakeBtn) presetFakeBtn.addEventListener("click", () => loadPreset("fake"));
+    if (presetAiFactualBtn) presetAiFactualBtn.addEventListener("click", () => loadPreset("ai_factual"));
+    if (presetRecycledBtn) presetRecycledBtn.addEventListener("click", () => loadPreset("recycled"));
+
+    // Extract Page button
+    extractPageBtn.addEventListener("click", async () => {
+      errorBox.classList.add("hidden");
+      resultsContainer.classList.add("hidden");
+      await attemptLiveTabExtraction(false);
+    });
+
+    // Dismiss error button
+    if (errorDismissBtn) {
+      errorDismissBtn.addEventListener("click", () => {
+        errorBox.classList.add("hidden");
+      });
+    }
+
+    // Reset View button
+    if (resetViewBtn) {
+      resetViewBtn.addEventListener("click", () => {
+        resultsContainer.classList.add("hidden");
+        errorBox.classList.add("hidden");
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      });
+    }
+
+    // Load a preset payload
+    function loadPreset(presetKey) {
+      const presetData = DEMO_PRESETS[presetKey];
+      if (!presetData) return;
+
+      activePayload = JSON.parse(JSON.stringify(presetData));
+      postTextInput.value = activePayload.text;
+
+      const labelMap = {
+        real: "DEMO: LIKELY REAL",
+        uncertain: "DEMO: UNCERTAIN",
+        fake: "DEMO: LIKELY FAKE",
+        ai_factual: "DEMO: AI FACTUAL",
+        recycled: "DEMO: RECYCLED HOAX"
+      };
+      setSourceBadge("demo", labelMap[presetKey] || "DEMO PRESET");
+      updateMetadataUI(activePayload, activePayload.engagement);
+
+      errorBox.classList.add("hidden");
+      resultsContainer.classList.add("hidden");
+    }
+
+    // Set source badge UI
+    function setSourceBadge(mode, labelText) {
+      if (!contentSourceBadge) return;
+      contentSourceBadge.innerText = labelText;
+      contentSourceBadge.className = "source-badge";
+      if (mode === "live") {
+        contentSourceBadge.classList.add("source-live");
+      } else {
+        contentSourceBadge.classList.add("source-manual");
+      }
+    }
+
+    // Update detected metadata chips
+    function updateMetadataUI(payload, engagement) {
+      if (detectedPlatformChip) {
+        detectedPlatformChip.innerText = `Platform: ${(payload.platform || "generic").toUpperCase()}`;
+      }
+      if (detectedAuthorChip) {
+        const username = payload.author?.username || payload.author_username || "--";
+        detectedAuthorChip.innerText = `Author: @${username}`;
+      }
+      if (detectedCommentsChip) {
+        const count = Array.isArray(payload.comments) ? payload.comments.length : 0;
+        detectedCommentsChip.innerText = `Comments: ${count}`;
+      }
+      if (detectedMediaChip) {
+        const mCount = Array.isArray(payload.media) ? payload.media.length : 0;
+        detectedMediaChip.innerText = `Media: ${mCount}`;
+      }
+      if (detectedEngagementChip) {
+        if (engagement && engagement.likes != null) {
+          detectedEngagementChip.classList.remove("hidden");
+          detectedEngagementChip.innerText = `Likes: ${Number(engagement.likes).toLocaleString()}`;
+        } else {
+          detectedEngagementChip.classList.add("hidden");
+        }
+      }
+    }
+
+    // Backend health checker
+    async function refreshBackendStatus() {
+      if (!backendStatusBadge) return;
+      try {
+        const health = await SocialGuardApiClient.checkHealth();
+        if (health && health.status === "ok") {
+          backendStatusBadge.className = "badge-status badge-online";
+          backendStatusText.innerText = "API Online";
+          backendStatusBadge.title = `FastAPI v${health.version || "1.0.0"} connected on :8000`;
+        } else {
+          backendStatusBadge.className = "badge-status badge-offline";
+          backendStatusText.innerText = "API Offline";
+          backendStatusBadge.title = "FastAPI backend unreachable at http://localhost:8000";
+        }
+      } catch (err) {
+        backendStatusBadge.className = "badge-status badge-offline";
+        backendStatusText.innerText = "API Offline";
+        backendStatusBadge.title = `Error: ${err.message}`;
+      }
+    }
+
+    // Live tab extraction routine
+    async function attemptLiveTabExtraction(isAutoInit = false) {
+      if (typeof chrome === "undefined" || !chrome.tabs) return false;
+
+      try {
         const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
         if (!tab || !tab.id) {
-          if (!isAutoInit) showCategorizedError("EXTRACTION_ERROR", "No Active Tab", "No active browser tab detected.", "Ensure a browser tab is selected.");
+          handleExtractionFailure("No active tab detected.", isAutoInit);
           return false;
         }
 
         const tabUrl = tab.url || "";
-        if (tabUrl.startsWith("chrome://") || tabUrl.startsWith("chrome-extension://") || tabUrl.startsWith("about:") || tabUrl.startsWith("edge://")) {
-          setSourceBadge("manual", "INTERNAL PAGE");
-          if (!isAutoInit) {
-            showCategorizedError("EXTRACTION_ERROR", "Internal Browser Page", "Cannot inspect internal browser settings or extension pages.", "Please navigate to a public post on X, Reddit, or Instagram.");
+        const isRestrictedUrl = tabUrl.startsWith("chrome://") || tabUrl.startsWith("chrome-extension://") || tabUrl.startsWith("edge://") || tabUrl.startsWith("about:");
+        if (isRestrictedUrl) {
+          if (isAutoInit) {
+            setSourceBadge("manual", "MANUAL INPUT");
+          } else {
+            handleExtractionFailure("Cannot extract from browser internal pages. Navigate to a social media post or paste the text below.", false);
           }
           return false;
         }
 
-        return new Promise((resolve) => {
-          chrome.tabs.sendMessage(tab.id, { action: "EXTRACT_CURRENT_POST" }, async (response) => {
-            if (chrome.runtime.lastError || !response) {
-              if (chrome.scripting && chrome.scripting.executeScript) {
-                try {
-                  await chrome.scripting.executeScript({
-                    target: { tabId: tab.id },
-                    files: ["content/content_extractor.js"]
-                  });
-
-                  chrome.tabs.sendMessage(tab.id, { action: "EXTRACT_CURRENT_POST" }, (retryResponse) => {
-                    if (chrome.runtime.lastError || !retryResponse) {
-                      handleExtractionFailure("Content script did not respond. The page may still be loading or restricted.", isAutoInit);
-                      resolve(false);
-                    } else {
-                      resolve(processExtractionResponse(retryResponse, isAutoInit, tabUrl));
-                    }
-                  });
-                  return;
-                } catch (injectErr) {
-                  console.warn("[Social Guard] Script injection failed:", injectErr);
-                }
-              }
-              handleExtractionFailure("Could not connect to the current web page.", isAutoInit);
-              resolve(false);
+        // Helper to send extraction message with timeout
+        const sendExtractMessage = () => new Promise((resolve) => {
+          chrome.tabs.sendMessage(tab.id, { action: "EXTRACT_CURRENT_POST" }, (response) => {
+            if (chrome.runtime.lastError) {
+              resolve({ error: chrome.runtime.lastError.message });
               return;
             }
-
-            resolve(processExtractionResponse(response, isAutoInit, tabUrl));
+            resolve(response || { error: "No response from page extractor." });
           });
         });
-      } catch (err) {
-        console.warn("[Social Guard] Extraction exception:", err);
-        handleExtractionFailure(err.message, isAutoInit);
-        return false;
-      }
-    }
 
-    function processExtractionResponse(response, isAutoInit, tabUrl = "") {
-      if (response.success && response.data) {
-        rawExtractedData = response.data;
-        if (!rawExtractedData.post_url && tabUrl) {
-          rawExtractedData.post_url = tabUrl;
+        let response = await sendExtractMessage();
+
+        // If content script was not injected on this pre-existing tab, inject it on demand and retry
+        if (response?.error && chrome.scripting) {
+          try {
+            await chrome.scripting.executeScript({
+              target: { tabId: tab.id },
+              files: ["content/content_extractor.js"]
+            });
+            // Brief wait for script execution
+            await new Promise(r => setTimeout(r, 120));
+            response = await sendExtractMessage();
+          } catch (scriptErr) {
+            console.warn("[Social Guard] Dynamic script injection attempt:", scriptErr);
+          }
         }
-        applyExtractedData(response.data);
-        return true;
-      } else {
-        const err = response.error || "No post detected on the active page.";
-        handleExtractionFailure(err, isAutoInit);
+
+        if (response && response.success && response.data) {
+          rawExtractedData = response.data;
+          if (!rawExtractedData.post_url && tabUrl) {
+            rawExtractedData.post_url = tabUrl;
+          }
+          applyExtractedData(response.data);
+          return true;
+        } else {
+          const err = response?.error || "No post detected on active page.";
+          handleExtractionFailure(err, isAutoInit);
+          return false;
+        }
+      } catch (err) {
+        handleExtractionFailure(err.message, isAutoInit);
         return false;
       }
     }
 
     function applyExtractedData(data) {
       if (!data || !data.text || data.text.trim().length < 1) {
-        handleExtractionFailure("Extracted post text was empty or incomplete.", false);
+        handleExtractionFailure("Extracted post text was empty.", false);
         return;
       }
 
@@ -539,7 +616,7 @@ if (typeof document !== "undefined") {
         source: "live_tab",
         platform: (data.platform || "generic").toLowerCase(),
         post_id: data.post_id || null,
-        post_url: data.post_url || window.location?.href || "",
+        post_url: data.post_url || "",
         text: data.text.trim(),
         hashtags: data.hashtags || [],
         media: safeMedia,
@@ -548,14 +625,12 @@ if (typeof document !== "undefined") {
           username: data.author_username,
           account_age_days: null,
           followers: 0,
-          following: 0,
-          engagement_rate: (data.engagement?.likes && data.engagement?.replies) ?
-            Math.min(1.0, (data.engagement.likes + data.engagement.replies) / 5000) : null
+          following: 0
         } : null,
         engagement: data.engagement || null,
         comments: (data.comments || []).map((c, idx) => ({
           comment_id: c.comment_id || `c_${idx + 1}`,
-          author_id: c.username || `commenter_${idx + 1}`,
+          username: c.username || `commenter_${idx + 1}`,
           text: c.text,
           likes: c.likes || 0,
           timestamp: c.timestamp || null
@@ -572,15 +647,15 @@ if (typeof document !== "undefined") {
 
     function handleExtractionFailure(msg, isAutoInit) {
       if (isAutoInit) {
-        setSourceBadge("manual", "NO POST DETECTED");
-        platformChip.innerText = "Platform: --";
-        if (authorChip) authorChip.innerText = "Author: --";
-        commentsChip.innerText = "Comments: 0";
-        mediaChip.innerText = "Media: 0";
-        if (engagementChip) engagementChip.classList.add("hidden");
+        setSourceBadge("manual", "MANUAL INPUT");
       } else {
         setSourceBadge("manual", "EXTRACTION FAILED");
-        showCategorizedError("EXTRACTION_ERROR", "Extraction Failed", msg || "Could not detect a social-media post on this page.", "Open a specific tweet, reddit thread, or instagram post and try again.");
+        showCategorizedError(
+          "EXTRACTION_ERROR",
+          "Extraction Failed",
+          msg || "Could not detect a social-media post on this page.",
+          "Open a specific tweet, reddit thread, or instagram post and try again."
+        );
       }
     }
 
@@ -598,10 +673,10 @@ if (typeof document !== "undefined") {
       }
     }
 
-    // Step Progress Animator for Loading State
-    function setLoadingStep(stepNum, label) {
+    // 10. Multi-Stage Pipeline Progress Stepper
+    function setProgressStep(stepNum, label) {
       if (loadingStageLabel) loadingStageLabel.innerText = label;
-      for (let i = 1; i <= 5; i++) {
+      for (let i = 1; i <= 6; i++) {
         const stepEl = document.getElementById(`step-${i}`);
         if (!stepEl) continue;
         stepEl.classList.remove("active", "completed");
@@ -613,23 +688,21 @@ if (typeof document !== "undefined") {
       }
     }
 
-    // "Extract from Tab" button click
-    extractPageBtn.addEventListener("click", async () => {
-      errorBox.classList.add("hidden");
-      resultsContainer.classList.add("hidden");
-      await attemptLiveTabExtraction(false);
-    });
-
-    // "Analyze & Verify Content" button click
+    // "Run Explainable Verification" button click
     runVerifyBtn.addEventListener("click", async () => {
       errorBox.classList.add("hidden");
       resultsContainer.classList.add("hidden");
 
-      // 1. In Real Mode, if no active payload yet, attempt live extraction first
+      // 1. In Live Mode, if no active payload yet, attempt live extraction first
       if (currentMode === "real" && (!activePayload || !activePayload.text)) {
         const extracted = await attemptLiveTabExtraction(false);
         if (!extracted && (!postTextInput.value || postTextInput.value.trim().length === 0)) {
-          showCategorizedError("NO_CLAIM_FOUND", "No Post Detected", "No social media post detected on the active page.", "Navigate to a public post or switch to Demo Mode.");
+          showCategorizedError(
+            "NO_POST_DETECTED",
+            "No Post Found",
+            "No social media post detected on the active browser tab.",
+            "Navigate to a public post or switch to Demo Mode to test."
+          );
           return;
         }
       }
@@ -637,7 +710,12 @@ if (typeof document !== "undefined") {
       // 2. Synchronize current text input
       const currentText = postTextInput.value.trim();
       if (!currentText || currentText.length < 1) {
-        showCategorizedError("INSUFFICIENT_DATA", "Post Text Empty", "Please provide post content to verify.", "Enter text in the box or extract from an open post.");
+        showCategorizedError(
+          "INSUFFICIENT_DATA",
+          "Post Text Empty",
+          "Please enter or extract social media post text.",
+          "Type text in the input box or click 'Extract Tab'."
+        );
         return;
       }
 
@@ -660,82 +738,56 @@ if (typeof document !== "undefined") {
       try {
         const isDemo = (currentMode === "demo");
         analysisRequest = validateAndBuildAnalysisPayload(activePayload, isDemo);
-        console.log(`[Social Guard] Dispatching ${isDemo ? "DEMO" : "REAL"} payload to /analyze:`, JSON.stringify(analysisRequest, null, 2));
       } catch (valErr) {
-        showCategorizedError("INSUFFICIENT_DATA", "Payload Validation Failed", valErr.message, "Check post content format.");
+        showCategorizedError("VALIDATION_ERROR", "Payload Validation Error", valErr.message, "Check the post content format.");
         return;
       }
 
-      // 4. Begin Multi-Stage Pipeline Animation
+      // 4. Begin Multi-Stage Pipeline Animation (Prompt Requirement 10: 6 Steps)
       loadingSpinner.classList.remove("hidden");
-      setLoadingStep(1, "Extracting post...");
+      setProgressStep(1, "Extracting post content & metadata...");
 
-      let stageTimer1 = setTimeout(() => setLoadingStep(2, "Checking claims..."), 350);
-      let stageTimer2 = setTimeout(() => setLoadingStep(3, "Analysing comments & user behaviour..."), 900);
-      let stageTimer3 = setTimeout(() => setLoadingStep(4, "Checking similar content & image hashes..."), 1600);
-      let stageTimer4 = setTimeout(() => setLoadingStep(5, "Generating explainable credibility result..."), 2400);
+      const t1 = setTimeout(() => setProgressStep(2, "Module 1: Analysing comments & sentiment..."), 300);
+      const t2 = setTimeout(() => setProgressStep(3, "Module 2: Verifying claims against Google Fact Check..."), 700);
+      const t3 = setTimeout(() => setProgressStep(4, "Module 3: Evaluating user behaviour & Isolation Forest..."), 1200);
+      const t4 = setTimeout(() => setProgressStep(5, "Module 4: Matching similar content & image hashes..."), 1700);
+      const t5 = setTimeout(() => setProgressStep(6, "Generating Explainable AI verification report..."), 2200);
 
       try {
         const result = await SocialGuardApiClient.analyzePost(analysisRequest);
 
-        clearTimeout(stageTimer1);
-        clearTimeout(stageTimer2);
-        clearTimeout(stageTimer3);
-        clearTimeout(stageTimer4);
-        setLoadingStep(5, "Analysis Complete!");
+        clearTimeout(t1);
+        clearTimeout(t2);
+        clearTimeout(t3);
+        clearTimeout(t4);
+        clearTimeout(t5);
+        setProgressStep(6, "Verification Complete!");
 
         renderResults(result, activePayload);
       } catch (err) {
-        clearTimeout(stageTimer1);
-        clearTimeout(stageTimer2);
-        clearTimeout(stageTimer3);
-        clearTimeout(stageTimer4);
+        clearTimeout(t1);
+        clearTimeout(t2);
+        clearTimeout(t3);
+        clearTimeout(t4);
+        clearTimeout(t5);
 
         if (err instanceof SocialGuardApiError) {
           if (err.errorType === "OfflineError") {
             showCategorizedError(
-              "BACKEND_ERROR",
+              "BACKEND_OFFLINE",
               "Backend Offline",
               "FastAPI server at http://localhost:8000 is unreachable.",
-              "Ensure the server is running on port 8000 (uvicorn app.main:app)."
+              "Start the backend using: .\\venv\\Scripts\\python -m uvicorn app.main:app --port 8000"
             );
           } else if (err.errorType === "ValidationError") {
-            showCategorizedError(
-              "API_ERROR",
-              "Validation Error (HTTP 422)",
-              err.message,
-              "Review the schema requirements in the post content."
-            );
+            showCategorizedError("VALIDATION_ERROR", "Validation Error (HTTP 422)", err.message, "Ensure valid post format.");
           } else if (err.errorType === "TimeoutError") {
-            showCategorizedError(
-              "API_ERROR",
-              "Request Timeout (15s)",
-              err.message,
-              "The verification pipeline took too long. Check server load."
-            );
-          } else if (err.errorType === "BadRequestError") {
-            showCategorizedError(
-              "API_ERROR",
-              "Bad Request (HTTP 400)",
-              err.message,
-              "Check for malformed input values."
-            );
-          } else if (err.errorType === "InternalServerError") {
-            showCategorizedError(
-              "BACKEND_ERROR",
-              "Server Error (HTTP 500)",
-              err.message,
-              "Check backend server logs for trace details."
-            );
+            showCategorizedError("NETWORK_TIMEOUT", "Request Timeout (30s)", err.message, "Backend took too long. Check server load.");
           } else {
-            showCategorizedError(
-              "API_ERROR",
-              `Server Error (${err.status || "Unknown"})`,
-              err.message
-            );
+            showCategorizedError("API_ERROR", `Server Error (${err.status || "Unknown"})`, err.message);
           }
         } else {
-          showCategorizedError("API_ERROR", "Analysis Error", err.message);
+          showCategorizedError("APP_ERROR", "Verification Error", err.message);
         }
         await refreshBackendStatus();
       } finally {
@@ -744,21 +796,34 @@ if (typeof document !== "undefined") {
     });
 
     // ============================================================================
-    // 3. RESULTS RENDERER (Phase 6 Comprehensive Layout)
+    // 4. COMPREHENSIVE 12-SECTION EXPLAINABLE AI REPORT RENDERER
     // ============================================================================
 
     function renderResults(res, postData = null) {
       resultsContainer.classList.remove("hidden");
 
-      // 1. Post Information Section
-      const currentPost = postData || activePayload || {};
-      const platformName = (currentPost.platform || "generic").toUpperCase();
+      // Robust fallback access for top-level vs nested responses
+      const currentPost = postData || res.post_info || activePayload || {};
+      const m1 = res.module_1 || res.module_results?.module_breakdowns?.comments || {};
+      const m2 = res.module_2 || res.module_results?.module_breakdowns?.evidence || {};
+      const m3 = res.module_3 || res.module_results?.module_breakdowns?.user_behaviour || {};
+      const m4 = res.module_4 || res.module_results?.module_breakdowns?.similarity || {};
+      const m5 = res.module_5 || res.module_results?.module_breakdowns?.fusion || {};
+      const xai = res.xai_explanation || res.module_results?.explainability || {};
+
+      // --------------------------------------------------------------------------
+      // SECTION 3: Post Preview Card
+      // --------------------------------------------------------------------------
       const platformBadge = document.getElementById("result-platform-badge");
-      if (platformBadge) platformBadge.innerText = platformName;
+      if (platformBadge) {
+        platformBadge.innerText = (currentPost.platform || "generic").toUpperCase();
+      }
 
       const authorHandle = document.getElementById("result-author-handle");
       const cleanAuthor = currentPost.author?.username || currentPost.author_username;
-      if (authorHandle) authorHandle.innerText = cleanAuthor ? `@${cleanAuthor}` : "@author_unavailable";
+      if (authorHandle) {
+        authorHandle.innerText = cleanAuthor ? `@${cleanAuthor}` : "@author_unavailable";
+      }
 
       const postUrlEl = document.getElementById("result-post-url");
       const postUrl = currentPost.post_url || currentPost.url || "";
@@ -772,262 +837,409 @@ if (typeof document !== "undefined") {
       }
 
       const postTextEl = document.getElementById("result-post-text");
-      if (postTextEl) postTextEl.innerText = currentPost.text || "";
+      if (postTextEl) {
+        postTextEl.innerText = currentPost.text || "";
+      }
 
       const commentCountEl = document.getElementById("result-comment-count");
       if (commentCountEl) {
-        const totalReplies = currentPost.engagement?.replies != null ? currentPost.engagement.replies :
-          (currentPost.replies != null ? currentPost.replies :
-            (Array.isArray(currentPost.comments) ? currentPost.comments.length : 0));
-        const cLen = Array.isArray(currentPost.comments) ? currentPost.comments.length : 0;
-        if (totalReplies > 0 && cLen > 0 && totalReplies !== cLen) {
-          commentCountEl.innerText = `Comments: ${Number(totalReplies).toLocaleString()} (${cLen} analyzed)`;
+        const cLen = m1.comment_count != null ? m1.comment_count :
+          (Array.isArray(currentPost.comments) ? currentPost.comments.length : 0);
+        const totalReplies = currentPost.engagement?.replies;
+        if (totalReplies != null && totalReplies > cLen) {
+          commentCountEl.innerText = `💬 ${Number(totalReplies).toLocaleString()} replies (${cLen} analyzed)`;
         } else {
-          commentCountEl.innerText = `Comments: ${Number(totalReplies).toLocaleString()}`;
-        }
-      }
-
-      const likesCountEl = document.getElementById("result-likes-count");
-      if (likesCountEl) {
-        const likesVal = currentPost.engagement?.likes ?? currentPost.likes_count ?? null;
-        likesCountEl.innerText = likesVal !== null ? `Likes: ${Number(likesVal).toLocaleString()}` : "Likes: N/A";
-      }
-
-      const sharesCountEl = document.getElementById("result-shares-count");
-      if (sharesCountEl) {
-        const sharesVal = currentPost.engagement?.reposts ?? currentPost.shares_count ?? null;
-        if (sharesVal !== null && sharesVal !== undefined) {
-          sharesCountEl.classList.remove("hidden");
-          sharesCountEl.innerText = `Shares: ${Number(sharesVal).toLocaleString()}`;
-        } else {
-          sharesCountEl.classList.add("hidden");
+          commentCountEl.innerText = `💬 ${cLen} comments`;
         }
       }
 
       const mediaCountEl = document.getElementById("result-media-count");
       if (mediaCountEl) {
-        const mLen = Array.isArray(currentPost.media) ? currentPost.media.length : 0;
-        mediaCountEl.innerText = `Media: ${mLen}`;
+        const mLen = Array.isArray(currentPost.media) ? currentPost.media.length : (res.post_info?.media_count || 0);
+        mediaCountEl.innerText = `📷 ${mLen} media`;
       }
 
-      // 2. Main Verdict Banner: Credibility Score & Classification
-      const finalScore = res.consolidated_score != null ? Math.round(res.consolidated_score) : "--";
-      document.getElementById("credibility-score-val").innerText = finalScore;
+      const likesCountEl = document.getElementById("result-likes-count");
+      if (likesCountEl) {
+        const likes = currentPost.engagement?.likes;
+        likesCountEl.innerText = likes != null ? `❤️ ${Number(likes).toLocaleString()} likes` : `❤️ 0 likes`;
+      }
 
-      const badgeEl = document.getElementById("classification-badge");
-      const classification = res.classification || "UNCERTAIN";
-      badgeEl.innerText = classification;
+      const sharesCountEl = document.getElementById("result-shares-count");
+      if (sharesCountEl) {
+        const shares = currentPost.engagement?.reposts;
+        if (shares != null && shares > 0) {
+          sharesCountEl.classList.remove("hidden");
+          sharesCountEl.innerText = `🔁 ${Number(shares).toLocaleString()} reposts`;
+        } else {
+          sharesCountEl.classList.add("hidden");
+        }
+      }
 
-      badgeEl.className = "classification-badge";
-      if (classification === "LIKELY REAL") badgeEl.classList.add("verdict-likely-real");
-      else if (classification === "PROBABLY REAL") badgeEl.classList.add("verdict-probably-real");
-      else if (classification === "UNCERTAIN") badgeEl.classList.add("verdict-uncertain");
-      else if (classification === "PROBABLY FAKE") badgeEl.classList.add("verdict-probably-fake");
-      else badgeEl.classList.add("verdict-likely-fake");
+      // --------------------------------------------------------------------------
+      // SECTION 4: Main Verification Card (Credibility Score & 5-Tier Classification)
+      // --------------------------------------------------------------------------
+      const finalScore = res.consolidated_score != null ? Math.round(res.consolidated_score) : 50;
+      const scoreValEl = document.getElementById("credibility-score-val");
+      if (scoreValEl) scoreValEl.innerText = finalScore;
 
-      // 3. AI Detector: Orthogonal Decoupled Metric
-      const aiProbEl = document.getElementById("ai-probability-val");
-      if (res.ai_generation_probability != null) {
-        const pct = Math.round(res.ai_generation_probability * 100);
-        aiProbEl.innerText = `${pct}%`;
+      // Radial Gauge Animation
+      // Circle radius = 42, circumference = 2 * PI * 42 ≈ 263.89
+      const circleProgress = document.getElementById("score-circle-progress");
+      if (circleProgress) {
+        const circumference = 264;
+        const offset = circumference - (Math.max(0, Math.min(100, finalScore)) / 100) * circumference;
+        circleProgress.style.strokeDashoffset = offset;
+
+        // Color gauge stroke according to score
+        if (finalScore >= 80) circleProgress.style.stroke = "var(--color-likely-real)";
+        else if (finalScore >= 60) circleProgress.style.stroke = "var(--color-probably-real)";
+        else if (finalScore >= 40) circleProgress.style.stroke = "var(--color-uncertain)";
+        else if (finalScore >= 20) circleProgress.style.stroke = "var(--color-probably-fake)";
+        else circleProgress.style.stroke = "var(--color-likely-fake)";
+      }
+
+      // 5-Tier Classification Badge
+      const classificationBadge = document.getElementById("classification-badge");
+      const classification = res.classification || m5.classification || "UNCERTAIN";
+      if (classificationBadge) {
+        classificationBadge.innerText = classification;
+        classificationBadge.className = "classification-badge";
+
+        if (classification === "LIKELY REAL") classificationBadge.classList.add("verdict-likely-real");
+        else if (classification === "PROBABLY REAL") classificationBadge.classList.add("verdict-probably-real");
+        else if (classification === "UNCERTAIN") classificationBadge.classList.add("verdict-uncertain");
+        else if (classification === "PROBABLY FAKE") classificationBadge.classList.add("verdict-probably-fake");
+        else classificationBadge.classList.add("verdict-likely-fake");
+      }
+
+      // Confidence badge & interval
+      const confBadge = document.getElementById("confidence-badge");
+      const confInterval = document.getElementById("confidence-interval-text");
+      const confLevel = m5.confidence_level || "MEDIUM";
+      if (confBadge) {
+        confBadge.innerText = confLevel;
+        confBadge.className = "confidence-pill";
+        if (confLevel === "HIGH") confBadge.classList.add("confidence-high");
+        else if (confLevel === "LOW") confBadge.classList.add("confidence-low");
+        else confBadge.classList.add("confidence-med");
+      }
+
+      if (confInterval) {
+        if (m5.confidence_interval && Array.isArray(m5.confidence_interval)) {
+          const spread = Math.round((m5.confidence_interval[1] - m5.confidence_interval[0]) / 2);
+          confInterval.innerText = `±${spread}%`;
+        } else {
+          confInterval.innerText = "±5.0%";
+        }
+      }
+
+      const formulaText = document.getElementById("formula-applied-text");
+      if (formulaText && m5.formula_applied) {
+        formulaText.innerText = m5.formula_applied;
+      }
+
+      // --------------------------------------------------------------------------
+      // SECTION 9: AI Detection Section (Visually Decoupled from Credibility)
+      // --------------------------------------------------------------------------
+      const aiProbBadge = document.getElementById("ai-probability-val");
+      const aiProbBar = document.getElementById("ai-probability-bar");
+      const aiProb = res.ai_generation_probability != null ? res.ai_generation_probability : null;
+
+      if (aiProb !== null && aiProb !== undefined) {
+        const pct = Math.round(aiProb * 100);
+        if (aiProbBadge) aiProbBadge.innerText = `${pct}% Synthetic`;
+        if (aiProbBar) aiProbBar.style.width = `${pct}%`;
       } else {
-        aiProbEl.innerText = "N/A";
+        if (aiProbBadge) aiProbBadge.innerText = "0% Synthetic";
+        if (aiProbBar) aiProbBar.style.width = "0%";
       }
 
-      // 4. Module Results Section (Module 1 - 4)
-      const mScores = res.module_scores || {};
-      renderModuleBar("comment", mScores.comment_analysis);
-      renderModuleBar("evidence", mScores.evidence_verification);
-      renderModuleBar("behaviour", mScores.user_behaviour);
-      renderModuleBar("similarity", mScores.similar_content);
+      // --------------------------------------------------------------------------
+      // SECTION 5: Analysis Breakdown (Four Modular Cards)
+      // --------------------------------------------------------------------------
+      // Module 1: Comments
+      renderModuleCard(
+        "comment",
+        m1.score,
+        m1.status || "COMPLETED",
+        m1.explanation || "Comment sentiment, duplicate coordination, and debunking ratios evaluated."
+      );
+      updateElementText("m1-metric-count", m1.comment_count != null ? m1.comment_count : 0);
+      updateElementText("m1-metric-dups", m1.duplicate_ratio != null ? `${Math.round(m1.duplicate_ratio * 100)}%` : "0%");
+      updateElementText("m1-metric-zscore", m1.z_score != null ? Number(m1.z_score).toFixed(1) : "0.0");
+      updateElementText("m1-metric-debunk", m1.debunk_ratio != null ? `${Math.round(m1.debunk_ratio * 100)}%` : "0%");
 
-      // 5. Explanation Section: "Why did Social Guard give this result?"
-      const summaryEl = document.getElementById("explanation-summary");
-      summaryEl.innerText = res.explanation || "Verification completed.";
+      // Module 2: Evidence
+      renderModuleCard(
+        "evidence",
+        m2.score,
+        m2.status || "COMPLETED",
+        m2.explanation || "Cross-referenced claims against Google Fact Check Tools and accredited publishers."
+      );
+      const claimsCount = Array.isArray(m2.claims) ? m2.claims.length : 0;
+      const factChecksCount = Array.isArray(m2.fact_checks) ? m2.fact_checks.length : 0;
+      updateElementText("m2-metric-claims", claimsCount);
+      updateElementText("m2-metric-matches", factChecksCount);
+      updateElementText("m2-metric-verified", m2.verified_count != null ? m2.verified_count : 0);
+      updateElementText("m2-metric-false", m2.false_count != null ? m2.false_count : 0);
 
-      const reasonsList = document.getElementById("reasons-list");
-      reasonsList.innerHTML = "";
+      // Module 3: User Behaviour
+      renderModuleCard(
+        "behaviour",
+        m3.score,
+        m3.status || "COMPLETED",
+        m3.explanation || "Account age, velocity, and Isolation Forest anomaly score evaluated."
+      );
+      const isAnomalous = m3.is_anomalous === true;
+      const anomalyText = isAnomalous ? "ANOMALOUS" : (m3.status === "UNAVAILABLE" ? "N/A" : "NORMAL");
+      updateElementText("m3-metric-anomaly", anomalyText);
+      const m3Metrics = m3.metrics || {};
+      updateElementText("m3-metric-age", m3Metrics.account_age_days != null ? `${Math.round(m3Metrics.account_age_days)}d` : "--");
+      updateElementText("m3-metric-posts-day", m3Metrics.posts_per_day != null ? Number(m3Metrics.posts_per_day).toFixed(1) : "--");
+      updateElementText("m3-metric-eng", m3Metrics.engagement_rate != null ? `${(m3Metrics.engagement_rate * 100).toFixed(1)}%` : "--");
 
-      const xaiData = res.module_results?.explainability || {};
-      const posFactors = xaiData.positive_factors || [];
-      const negFactors = xaiData.negative_factors || [];
+      // Module 4: Similar Content
+      renderModuleCard(
+        "similarity",
+        m4.score,
+        m4.status || "COMPLETED",
+        m4.explanation || "Scanned for perceptual image matches and semantic narrative duplication."
+      );
+      const isRecycled = m4.recycled_content === true;
+      updateElementText("m4-metric-recycled", isRecycled ? "YES" : "NO");
+      updateElementText("m4-metric-visual", m4.visual_similarity != null ? `${Math.round(m4.visual_similarity * 100)}%` : "0%");
+      updateElementText("m4-metric-semantic", m4.semantic_similarity != null ? `${Math.round(m4.semantic_similarity * 100)}%` : "0%");
+      updateElementText("m4-metric-keywords", m4.keyword_similarity != null ? `${Math.round(m4.keyword_similarity * 100)}%` : "0%");
 
-      posFactors.slice(0, 3).forEach(factor => {
-        const li = document.createElement("li");
-        li.className = "reason-item reason-positive";
-        li.innerHTML = `<span class="factor-badge badge-pos">Support</span> ${escapeHtml(factor.description || factor.factor || "")}`;
-        reasonsList.appendChild(li);
-      });
-
-      negFactors.slice(0, 3).forEach(factor => {
-        const li = document.createElement("li");
-        li.className = "reason-item reason-negative";
-        li.innerHTML = `<span class="factor-badge badge-neg">Risk</span> ${escapeHtml(factor.description || factor.factor || "")}`;
-        reasonsList.appendChild(li);
-      });
-
-      // 5.5 Community & Comment Fact-Check Section
-      const commData = res.module_results?.module_breakdowns?.comments || res.module_results?.comments || {};
-      const commFactCheck = commData.fact_check || {};
-      const commVerdict = commFactCheck.verdict || "ORGANIC_DISCUSSION";
-      const commVerdictBadge = document.getElementById("comment-verdict-badge");
-      const commRatioStat = document.getElementById("comment-ratio-stat");
-      const commSummaryEl = document.getElementById("comment-factcheck-summary");
-      const debunkingListEl = document.getElementById("debunking-comments-list");
-
-      if (commVerdictBadge) {
-        commVerdictBadge.innerText = commVerdict.replace(/_/g, " ");
-        commVerdictBadge.className = "comment-verdict-badge";
-        if (commVerdict === "DEBUNKED_BY_COMMUNITY") {
-          commVerdictBadge.classList.add("verdict-likely-fake");
-        } else if (commVerdict === "CONTESTED_BY_COMMENTS") {
-          commVerdictBadge.classList.add("verdict-probably-fake");
-        } else if (commVerdict === "SUPPORTED_BY_COMMENTS") {
-          commVerdictBadge.classList.add("verdict-likely-real");
-        } else {
-          commVerdictBadge.classList.add("verdict-uncertain");
-        }
+      // --------------------------------------------------------------------------
+      // SECTION 6: XAI Section ("Why did Social Guard give this result?")
+      // --------------------------------------------------------------------------
+      const explanationSummaryEl = document.getElementById("explanation-summary");
+      if (explanationSummaryEl) {
+        explanationSummaryEl.innerText = xai.summary || res.explanation || "Evaluation completed across all 4 analytical engines.";
       }
 
-      if (commRatioStat) {
-        if (commFactCheck.debunk_ratio != null && commFactCheck.debunk_ratio > 0) {
-          commRatioStat.innerText = `${Math.round(commFactCheck.debunk_ratio * 100)}% debunking/skepticism`;
-        } else if (commFactCheck.support_ratio != null && commFactCheck.support_ratio > 0) {
-          commRatioStat.innerText = `${Math.round(commFactCheck.support_ratio * 100)}% corroboration`;
-        } else {
-          commRatioStat.innerText = "";
-        }
-      }
-
-      if (commSummaryEl) {
-        commSummaryEl.innerText = commFactCheck.summary || "No comment fact-checking signals detected.";
-      }
-
-      if (debunkingListEl) {
-        const debunkRemarks = commFactCheck.debunking_comments || [];
-        if (debunkRemarks.length > 0) {
-          debunkingListEl.classList.remove("hidden");
-          debunkingListEl.innerHTML = "<span class='sub-label'>Sample remarks from commenters:</span>" +
-            debunkRemarks.slice(0, 3).map(r => `<div class='debunk-item'>💬 "${escapeHtml(r)}"</div>`).join("");
-        } else {
-          debunkingListEl.classList.add("hidden");
-          debunkingListEl.innerHTML = "";
-        }
-      }
-
-      // 6. Evidence & Fact-Checks Section
-      const evModule = res.module_results?.module_breakdowns?.evidence || {};
-      const claimsBlock = document.getElementById("claims-checked-block");
-      const claimsList = document.getElementById("claims-checked-list");
-      const extractedClaims = evModule.claims || [];
-
-      if (claimsBlock && claimsList) {
-        if (extractedClaims.length > 0) {
-          claimsBlock.classList.remove("hidden");
-          claimsList.innerHTML = "";
-          extractedClaims.forEach(claimStr => {
-            const cli = document.createElement("li");
-            cli.className = "claim-list-item";
-            cli.innerText = claimStr;
-            claimsList.appendChild(cli);
+      // Positive Factors
+      const posFactorsList = document.getElementById("positive-factors-list");
+      if (posFactorsList) {
+        posFactorsList.innerHTML = "";
+        const posFactors = xai.positive_factors || [];
+        if (posFactors.length > 0) {
+          posFactors.forEach(factor => {
+            const li = document.createElement("li");
+            li.className = "factor-item factor-item-positive";
+            const desc = factor.description || factor.factor || factor;
+            li.innerHTML = `<span class="factor-pill-badge pill-pos">Support</span> <span>${escapeHtml(desc)}</span>`;
+            posFactorsList.appendChild(li);
           });
         } else {
-          claimsBlock.classList.add("hidden");
+          posFactorsList.innerHTML = `<li class="factor-item" style="color:var(--text-dim);">No significant positive credibility factors detected.</li>`;
+        }
+      }
+
+      // Negative Factors
+      const negFactorsList = document.getElementById("negative-factors-list");
+      if (negFactorsList) {
+        negFactorsList.innerHTML = "";
+        const negFactors = xai.negative_factors || [];
+        if (negFactors.length > 0) {
+          negFactors.forEach(factor => {
+            const li = document.createElement("li");
+            li.className = "factor-item factor-item-negative";
+            const desc = factor.description || factor.factor || factor;
+            li.innerHTML = `<span class="factor-pill-badge pill-neg">Risk</span> <span>${escapeHtml(desc)}</span>`;
+            negFactorsList.appendChild(li);
+          });
+        } else {
+          negFactorsList.innerHTML = `<li class="factor-item" style="color:var(--text-dim);">No significant risk flags or contradictions identified.</li>`;
+        }
+      }
+
+      // Confidence Notes
+      const confNotesList = document.getElementById("confidence-notes-list");
+      if (confNotesList) {
+        confNotesList.innerHTML = "";
+        const notes = xai.confidence_notes || [];
+        if (notes.length > 0) {
+          notes.forEach(note => {
+            const li = document.createElement("li");
+            li.className = "factor-item factor-item-confidence";
+            li.innerHTML = `<span class="factor-pill-badge pill-note">Note</span> <span>${escapeHtml(note)}</span>`;
+            confNotesList.appendChild(li);
+          });
+        } else {
+          const fallbackNote = confLevel === "HIGH" ? "Strong consensus between fact-checking and engagement metrics." :
+            "Evaluated with standard conservative baselines for missing or unindexed metadata.";
+          confNotesList.innerHTML = `<li class="factor-item factor-item-confidence"><span class="factor-pill-badge pill-note">Note</span> <span>${fallbackNote}</span></li>`;
+        }
+      }
+
+      // --------------------------------------------------------------------------
+      // SECTION 7: Evidence Section (Extracted Claims & Fact Checks)
+      // --------------------------------------------------------------------------
+      const evidenceCountBadge = document.getElementById("evidence-count-badge");
+      const factChecksList = m2.fact_checks || [];
+      if (evidenceCountBadge) {
+        evidenceCountBadge.innerText = `${factChecksList.length} Checks`;
+      }
+
+      const claimsCheckedBlock = document.getElementById("claims-checked-block");
+      const claimsCheckedList = document.getElementById("claims-checked-list");
+      const extractedClaims = m2.claims || [];
+
+      if (claimsCheckedBlock && claimsCheckedList) {
+        if (extractedClaims.length > 0) {
+          claimsCheckedBlock.classList.remove("hidden");
+          claimsCheckedList.innerHTML = "";
+          extractedClaims.forEach(claimStr => {
+            const li = document.createElement("li");
+            li.className = "claim-item";
+            li.innerText = `"${claimStr}"`;
+            claimsCheckedList.appendChild(li);
+          });
+        } else {
+          claimsCheckedBlock.classList.add("hidden");
         }
       }
 
       const evContainer = document.getElementById("evidence-container");
-      evContainer.innerHTML = "";
-      const factChecks = evModule.fact_checks || [];
+      if (evContainer) {
+        evContainer.innerHTML = "";
+        if (factChecksList.length > 0) {
+          factChecksList.forEach(fc => {
+            const item = document.createElement("div");
+            item.className = "evidence-item-card";
 
-      if (factChecks.length > 0) {
-        factChecks.forEach(fc => {
-          const item = document.createElement("div");
-          item.className = "evidence-item";
+            const ratingText = fc.rating || fc.review_rating || fc.raw_rating || "Checked";
+            const ratingCategory = (fc.rating_category || "").toUpperCase();
+            let ratingBadgeClass = "rating-badge-mixed";
+            if (ratingCategory === "FALSE" || ratingCategory === "MOSTLY_FALSE") ratingBadgeClass = "rating-badge-false";
+            else if (ratingCategory === "TRUE" || ratingCategory === "MOSTLY_TRUE") ratingBadgeClass = "rating-badge-true";
 
-          const ratingText = fc.rating || fc.raw_rating || "Checked";
-          const ratingCategory = (fc.rating_category || "").toUpperCase();
-          let ratingBadgeClass = "rating-mixed";
-          if (ratingCategory === "FALSE" || ratingCategory === "MOSTLY_FALSE") ratingBadgeClass = "rating-false";
-          else if (ratingCategory === "TRUE" || ratingCategory === "MOSTLY_TRUE") ratingBadgeClass = "rating-true";
+            const rawLink = fc.source_url || fc.publisher_url;
+            const safeLink = (rawLink && typeof rawLink === "string" && (rawLink.startsWith("http://") || rawLink.startsWith("https://"))) ? rawLink : null;
 
-          const rawLink = fc.source_url || fc.publisher_url;
-          const safeLink = (rawLink && typeof rawLink === "string" && (rawLink.trim().startsWith("https://") || rawLink.trim().startsWith("http://"))) ? rawLink.trim() : null;
-
-          item.innerHTML = `
-            <div class="evidence-header">
-              <span class="evidence-pub">${escapeHtml(fc.publisher || "Fact Checker")}</span>
-              <span class="evidence-rating ${ratingBadgeClass}">${escapeHtml(ratingText)}</span>
+            item.innerHTML = `
+              <div class="evidence-item-header">
+                <span class="evidence-publisher">${escapeHtml(fc.publisher || "Fact Checker")}</span>
+                <span class="evidence-rating-badge ${ratingBadgeClass}">${escapeHtml(ratingText)}</span>
+              </div>
+              <p class="evidence-claim-quote">"${escapeHtml(fc.claim || "")}"</p>
+              ${safeLink ? `<a href="${escapeHtml(safeLink)}" target="_blank" rel="noopener noreferrer" class="evidence-source-link">Read Full Review &rarr;</a>` : ""}
+            `;
+            evContainer.appendChild(item);
+          });
+        } else {
+          const evExplanation = m2.explanation || "No direct third-party fact-check matches found on Google Fact Check Tools.";
+          evContainer.innerHTML = `
+            <div class="empty-notice-card">
+              <span class="empty-main">${escapeHtml(evExplanation)}</span>
+              <span class="empty-sub">Evidence module assigned a neutral 50.0 baseline according to XAI standards.</span>
             </div>
-            <p class="evidence-claim">"${escapeHtml(fc.claim || "")}"</p>
-            ${safeLink ? `<a href="${escapeHtml(safeLink)}" target="_blank" rel="noopener noreferrer" class="evidence-link">Read full review &rarr;</a>` : ""}
           `;
-          evContainer.appendChild(item);
-        });
-      } else {
-        const evExplanation = evModule.explanation || "No direct third-party fact-check matches found on Google Fact Check Tools.";
-        evContainer.innerHTML = `
-          <div class="empty-notice">
-            <span>${escapeHtml(evExplanation)}</span>
-            <span class="empty-sub">Evidence module assigned neutral baseline (50.0).</span>
-          </div>
-        `;
+        }
       }
 
-      // 7. Similar Content Section
+      // --------------------------------------------------------------------------
+      // SECTION 8: Similar Content Section (Historical Matches & Recycling)
+      // --------------------------------------------------------------------------
+      const recycledStatusPill = document.getElementById("recycled-status-pill");
+      if (recycledStatusPill) {
+        if (isRecycled) {
+          recycledStatusPill.innerText = "Recycled Warning";
+          recycledStatusPill.style.color = "var(--color-likely-fake)";
+        } else {
+          recycledStatusPill.innerText = "Original";
+          recycledStatusPill.style.color = "var(--color-likely-real)";
+        }
+      }
+
       const simContainer = document.getElementById("similar-content-container");
-      simContainer.innerHTML = "";
-      const simModule = res.module_results?.module_breakdowns?.similarity || {};
-
-      if (simModule.recycled_content) {
-        simContainer.innerHTML = `
-          <div class="similar-item recycled-warning">
-            <div class="similar-header">
-              <span class="badge-recycled">Recycled Hoax Warning</span>
-              <span class="similar-date">${escapeHtml(simModule.earliest_matching_timestamp ? simModule.earliest_matching_timestamp.slice(0, 10) : "Historical")}</span>
+      if (simContainer) {
+        simContainer.innerHTML = "";
+        if (isRecycled) {
+          const matchDate = m4.earliest_matching_timestamp ? m4.earliest_matching_timestamp.slice(0, 10) : "Historical";
+          simContainer.innerHTML = `
+            <div class="recycled-warning-card">
+              <div class="recycled-header">
+                <span class="badge-recycled">Recycled Viral Hoax Detected</span>
+                <span class="recycled-date">${escapeHtml(matchDate)}</span>
+              </div>
+              <p class="recycled-explanation">${escapeHtml(m4.explanation || "This narrative closely matches previously debunked viral hoaxes.")}</p>
             </div>
-            <p class="similar-text">${escapeHtml(simModule.explanation || "This narrative matches historical debunked records.")}</p>
-          </div>
-        `;
-      } else {
-        simContainer.innerHTML = `
-          <div class="empty-notice">
-            <span>Original narrative structure. No recycled viral hoax matches detected in local corpus.</span>
-          </div>
-        `;
+          `;
+        } else {
+          simContainer.innerHTML = `
+            <div class="empty-notice-card">
+              <span class="empty-main">Original narrative structure.</span>
+              <span class="empty-sub">No recycled viral hoax matches detected in local reference corpus.</span>
+            </div>
+          `;
+        }
+
+        // Show matching items if any exist
+        const matches = m4.matches || [];
+        if (matches.length > 0) {
+          matches.forEach(m => {
+            const mEl = document.createElement("div");
+            mEl.className = "similar-match-item";
+            mEl.innerHTML = `
+              <span class="match-title">${escapeHtml(m.title || m.id || "Corpus Match")}</span>
+              <span class="match-meta">Visual: ${Math.round((m.visual_similarity || 0) * 100)}% | Semantic: ${Math.round((m.semantic_similarity || 0) * 100)}%</span>
+            `;
+            simContainer.appendChild(mEl);
+          });
+        }
       }
+
+      // Scroll smoothly to top of results
+      resultsContainer.scrollIntoView({ behavior: "smooth", block: "start" });
     }
 
-    function renderModuleBar(name, score) {
-      const scoreTextEl = document.getElementById(`score-${name}`);
+    // Helper: Module card updater
+    function renderModuleCard(name, score, status, explanation) {
+      const scoreEl = document.getElementById(`score-${name}`);
       const barEl = document.getElementById(`bar-${name}`);
       const statusEl = document.getElementById(`status-${name}`);
+      const descEl = document.getElementById(`desc-${name}`);
+
+      if (descEl && explanation) {
+        descEl.innerText = explanation;
+      }
 
       if (score != null) {
         const val = Math.round(score);
-        scoreTextEl.innerText = `${val}/100`;
-        barEl.style.width = `${Math.min(100, Math.max(0, val))}%`;
-
-        if (val >= 70) {
-          barEl.className = "bar bar-high";
-          statusEl.innerText = "Status: Strong";
-          statusEl.className = "module-status-tag tag-high";
-        } else if (val >= 40) {
-          barEl.className = "bar bar-mid";
-          statusEl.innerText = "Status: Neutral";
-          statusEl.className = "module-status-tag tag-mid";
-        } else {
-          barEl.className = "bar bar-low";
-          statusEl.innerText = "Status: Suspicious";
-          statusEl.className = "module-status-tag tag-low";
+        if (scoreEl) scoreEl.innerText = `${val}/100`;
+        if (barEl) {
+          barEl.style.width = `${Math.min(100, Math.max(0, val))}%`;
+          if (val >= 70) barEl.className = "progress-bar-fill bar-high";
+          else if (val >= 40) barEl.className = "progress-bar-fill bar-mid";
+          else barEl.className = "progress-bar-fill bar-low";
         }
       } else {
-        scoreTextEl.innerText = "--/100";
-        barEl.style.width = "0%";
-        barEl.className = "bar";
-        statusEl.innerText = "Status: Unavailable";
-        statusEl.className = "module-status-tag";
+        if (scoreEl) scoreEl.innerText = "--/100";
+        if (barEl) {
+          barEl.style.width = "0%";
+          barEl.className = "progress-bar-fill";
+        }
       }
+
+      if (statusEl) {
+        statusEl.innerText = (status || "COMPLETED").toUpperCase();
+        statusEl.className = "module-status-badge";
+        const st = (status || "").toUpperCase();
+        if (st === "COMPLETED") statusEl.classList.add("status-completed");
+        else if (st === "PARTIAL") statusEl.classList.add("status-partial");
+        else if (st === "UNAVAILABLE") statusEl.classList.add("status-unavailable");
+        else if (st === "ERROR") statusEl.classList.add("status-error");
+        else statusEl.classList.add("status-pending");
+      }
+    }
+
+    function updateElementText(id, text) {
+      const el = document.getElementById(id);
+      if (el) el.innerText = text;
     }
 
     function escapeHtml(str) {

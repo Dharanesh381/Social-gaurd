@@ -163,3 +163,195 @@ def test_invalid_weights_raise_value_error():
             "behaviour_score": 0.5,
             "similarity_score": 0.5,
         })  # Sum is 2.0
+
+
+# ==============================================================================
+# 3. EIGHT REQUIRED USER SPECIFICATION TESTS & GUARDRAILS
+# ==============================================================================
+
+def test_case_1_all_high_scores(fusion_engine: ScoreFusionEngine):
+    """Test 1: All high scores across all modules.
+
+    M1: 90.0, M2: 95.0, M3: 85.0, M4: 90.0
+    Math: 0.20*90 + 0.40*95 + 0.15*85 + 0.25*90 = 18 + 38 + 12.75 + 22.5 = 91.25
+    Classification: LIKELY REAL
+    """
+    res = fusion_engine.fuse_and_explain(
+        m1=90.0,
+        m2=95.0,
+        m3=85.0,
+        m4=90.0,
+    )
+
+    assert res["final_score"] == 91.25
+    assert res["classification"] == "LIKELY REAL"
+    assert res["confidence_level"] in ("HIGH", "MEDIUM")
+    assert res["module_scores"]["comment_analysis"] == 90.0
+    assert res["module_scores"]["evidence_verification"] == 95.0
+    assert res["module_scores"]["user_behaviour"] == 85.0
+    assert res["module_scores"]["similar_content"] == 90.0
+    assert res["weighted_contributions"]["comment_analysis"] == 18.0
+    assert res["weighted_contributions"]["evidence_verification"] == 38.0
+    assert res["weighted_contributions"]["user_behaviour"] == 12.75
+    assert res["weighted_contributions"]["similar_content"] == 22.5
+    assert len(res["positive_factors"]) >= 1
+    assert len(res["negative_factors"]) == 0
+    assert "LIKELY REAL" in res["explanation_summary"]
+
+
+def test_case_2_all_low_scores(fusion_engine: ScoreFusionEngine):
+    """Test 2: All low scores across all modules (debunked, coordinated, anomalous, recycled).
+
+    M1: 15.0, M2: 10.0, M3: 20.0, M4: 15.0
+    Math: 0.20*15 + 0.40*10 + 0.15*20 + 0.25*15 = 3 + 4 + 3 + 3.75 = 13.75
+    Classification: LIKELY FAKE
+    """
+    res = fusion_engine.fuse_and_explain(
+        m1=15.0,
+        m2=10.0,
+        m3=20.0,
+        m4=15.0,
+    )
+
+    assert res["final_score"] == 13.75
+    assert res["classification"] == "LIKELY FAKE"
+    assert res["weighted_contributions"]["comment_analysis"] == 3.0
+    assert res["weighted_contributions"]["evidence_verification"] == 4.0
+    assert res["weighted_contributions"]["user_behaviour"] == 3.0
+    assert res["weighted_contributions"]["similar_content"] == 3.75
+    assert len(res["negative_factors"]) >= 1
+    assert "LIKELY FAKE" in res["explanation_summary"]
+
+
+def test_case_3_mixed_scores(fusion_engine: ScoreFusionEngine):
+    """Test 3: Mixed scores matching exact user specification example.
+
+    M1: 80.0, M2: 90.0, M3: 70.0, M4: 60.0
+    Math: 0.20*80 + 0.40*90 + 0.15*70 + 0.25*60 = 16 + 36 + 10.5 + 15 = 77.5
+    Classification: PROBABLY REAL
+    """
+    res = fusion_engine.fuse_and_explain(
+        m1=80.0,
+        m2=90.0,
+        m3=70.0,
+        m4=60.0,
+    )
+
+    assert res["final_score"] == 77.5
+    assert res["classification"] == "PROBABLY REAL"
+    assert res["weighted_contributions"]["comment_analysis"] == 16.0
+    assert res["weighted_contributions"]["evidence_verification"] == 36.0
+    assert res["weighted_contributions"]["user_behaviour"] == 10.5
+    assert res["weighted_contributions"]["similar_content"] == 15.0
+    assert "PROBABLY REAL" in res["explanation_summary"]
+    assert "Evidence" in res["explanation_summary"]
+
+
+def test_case_4_uncertain_scores(fusion_engine: ScoreFusionEngine):
+    """Test 4: Uncertain scores across all modules (neutral baseline 50).
+
+    M1: 50.0, M2: 50.0, M3: 50.0, M4: 50.0
+    Math: 0.20*50 + 0.40*50 + 0.15*50 + 0.25*50 = 10 + 20 + 7.5 + 12.5 = 50.0
+    Classification: UNCERTAIN
+    """
+    res = fusion_engine.fuse_and_explain(
+        m1=50.0,
+        m2=50.0,
+        m3=50.0,
+        m4=50.0,
+    )
+
+    assert res["final_score"] == 50.0
+    assert res["classification"] == "UNCERTAIN"
+    assert res["weighted_contributions"]["evidence_verification"] == 20.0
+
+
+def test_case_5_missing_evidence_guardrail(fusion_engine: ScoreFusionEngine):
+    """Test 5: Guardrail 3 - Missing fact-check results MUST NOT automatically classify content as fake.
+
+    M1: 85.0, M2: None (missing fact-check -> neutral 50.0 fallback), M3: 80.0, M4: 80.0
+    Math: 0.20*85 (17) + 0.40*50 (20) + 0.15*80 (12) + 0.25*80 (20) = 69.0
+    Classification: PROBABLY REAL (not fake!)
+    """
+    res = fusion_engine.fuse_and_explain(
+        comment_score=85.0,
+        evidence_score=None,
+        behaviour_score=80.0,
+        similarity_score=80.0,
+    )
+
+    assert res["final_score"] == 69.0
+    assert res["classification"] == "PROBABLY REAL"
+    assert res["classification"] != "PROBABLY FAKE"
+    assert res["classification"] != "LIKELY FAKE"
+    assert any("EVIDENCE_SCORE_MISSING_FALLBACK_APPLIED" in f for f in res["flags"])
+    assert any("does not verify or disprove" in note.lower() for note in res["confidence_notes"])
+
+
+def test_case_6_anomalous_behavior_guardrail(fusion_engine: ScoreFusionEngine):
+    """Test 6: Guardrail 2 - Behavioral anomaly MUST NOT automatically classify content as fake.
+
+    M1: 90.0, M2: 95.0, M3: 10.0 (anomalous bot-like activity), M4: 85.0
+    Math: 0.20*90 (18) + 0.40*95 (38) + 0.15*10 (1.5) + 0.25*85 (21.25) = 78.75
+    Classification: PROBABLY REAL (not fake!)
+    """
+    res = fusion_engine.fuse_and_explain(
+        comment_score=90.0,
+        evidence_score=95.0,
+        behaviour_score=10.0,
+        similarity_score=85.0,
+    )
+
+    assert res["final_score"] == 78.75
+    assert res["classification"] == "PROBABLY REAL"
+    assert res["classification"] != "PROBABLY FAKE"
+    assert res["classification"] != "LIKELY FAKE"
+    # Guardrail explanation verified
+    assert any("does not alone prove content falsity" in note.lower() for note in res["confidence_notes"])
+
+
+def test_case_7_ai_generated_but_factual_content(fusion_engine: ScoreFusionEngine):
+    """Test 7: Guardrail 1 - AI-generation probability MUST NOT modify credibility score.
+
+    High AI generation probability (0.95 / 95%) with factual verified signals:
+    M1: 90.0, M2: 95.0, M3: 85.0, M4: 90.0
+    Score without AI probability = 91.25
+    Score with AI probability = 91.25 (EXACTLY UNCHANGED!)
+    Classification: LIKELY REAL
+    """
+    res_without_ai = fusion_engine.fuse_and_explain(
+        m1=90.0, m2=95.0, m3=85.0, m4=90.0
+    )
+    res_with_ai = fusion_engine.fuse_and_explain(
+        m1=90.0, m2=95.0, m3=85.0, m4=90.0,
+        ai_generated_probability=0.95,
+    )
+
+    assert res_with_ai["final_score"] == res_without_ai["final_score"] == 91.25
+    assert res_with_ai["classification"] == "LIKELY REAL"
+    # Check decoupled AI note
+    assert any("orthogonal to factual credibility" in note.lower() for note in res_with_ai["confidence_notes"])
+
+
+def test_case_8_human_created_but_false_content(fusion_engine: ScoreFusionEngine):
+    """Test 8: Human-created but false content is correctly penalized for falsehood despite human authorship.
+
+    Human authorship: AI probability = 0.05 (5%)
+    M1: 20.0 (skeptical debunk comments), M2: 0.0 (debunked false claim), M3: 80.0 (mature human user), M4: 25.0 (recycled hoax)
+    Math: 0.20*20 (4) + 0.40*0 (0) + 0.15*80 (12) + 0.25*25 (6.25) = 22.25
+    Classification: PROBABLY FAKE
+    """
+    res = fusion_engine.fuse_and_explain(
+        m1=20.0,
+        m2=0.0,
+        m3=80.0,
+        m4=25.0,
+        ai_generated_probability=0.05,
+    )
+
+    assert res["final_score"] == 22.25
+    assert res["classification"] == "PROBABLY FAKE"
+    assert any("human-written" in note.lower() for note in res["confidence_notes"])
+    assert any("does not guarantee factual accuracy" in note.lower() for note in res["confidence_notes"])
+    assert len(res["negative_factors"]) >= 1
+

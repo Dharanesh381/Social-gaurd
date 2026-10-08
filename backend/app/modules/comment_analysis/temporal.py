@@ -1,6 +1,7 @@
 """Time-based and burst anomaly detection for comments."""
 
 from datetime import datetime
+from typing import Any
 
 import numpy as np
 
@@ -9,7 +10,7 @@ def compute_temporal_features(
     timestamps: list[datetime],
     time_window_minutes: int = 1,
     zscore_threshold: float = 3.0,
-) -> dict[str, float]:
+) -> dict[str, Any]:
     """Analyze temporal comment distribution, comments per minute, and burst anomalies.
 
     Techniques:
@@ -28,22 +29,36 @@ def compute_temporal_features(
         - average_comments_per_minute: Mean comments per minute over active span
         - max_comments_per_minute: Maximum comments observed in a single window
         - zscore_max: Maximum Z-score observed across intervals
+        - z_score: Rounded max Z-score (alias)
         - zscore_burst_detected: 1.0 if zscore_max >= zscore_threshold, else 0.0
         - iqr_burst_detected: 1.0 if any interval exceeds Q3 + 1.5*IQR, else 0.0
+        - iqr_anomaly_info: Dict of Q25, Q75, IQR, upper bound, and outlier count
         - temporal_anomaly_score: Continuous anomaly indicator in [0.0, 1.0]
+        - temporal_burst_score: Alias for temporal_anomaly_score
     """
-    valid_times = sorted([ts for ts in timestamps if ts is not None])
+    valid_times = sorted([ts for ts in timestamps if isinstance(ts, datetime)])
     n = len(valid_times)
 
     if n < 3:
+        iqr_info = {
+            "q25": 0.0,
+            "q75": 0.0,
+            "iqr": 0.0,
+            "upper_bound": 0.0,
+            "outlier_count": 0,
+            "iqr_burst_detected": False,
+        }
         return {
             "duration_minutes": 0.0,
             "average_comments_per_minute": float(n),
             "max_comments_per_minute": float(n),
             "zscore_max": 0.0,
+            "z_score": 0.0,
             "zscore_burst_detected": 0.0,
             "iqr_burst_detected": 0.0,
+            "iqr_anomaly_info": iqr_info,
             "temporal_anomaly_score": 0.0,
+            "temporal_burst_score": 0.0,
         }
 
     first_time = valid_times[0]
@@ -57,18 +72,29 @@ def compute_temporal_features(
 
     # If span is under 1 minute but has multiple comments
     if num_bins == 1:
-        # Single bucket: comments per minute = total comments / duration
         cpm = (n / total_seconds) * 60.0
-        # High burst if > 30 comments in under 1 minute
         is_burst = 1.0 if (n >= 10 and duration_minutes < 1.0) else 0.0
+        z_val = round(3.5 if is_burst else 0.0, 2)
+        anom = round(min(1.0, cpm / 60.0), 4) if is_burst else 0.0
+        iqr_info = {
+            "q25": float(n),
+            "q75": float(n),
+            "iqr": 0.0,
+            "upper_bound": float(n),
+            "outlier_count": 1 if is_burst else 0,
+            "iqr_burst_detected": bool(is_burst),
+        }
         return {
             "duration_minutes": round(duration_minutes, 2),
             "average_comments_per_minute": round(cpm, 2),
             "max_comments_per_minute": round(float(n), 2),
-            "zscore_max": round(is_burst * 3.5, 2),
+            "zscore_max": z_val,
+            "z_score": z_val,
             "zscore_burst_detected": is_burst,
             "iqr_burst_detected": is_burst,
-            "temporal_anomaly_score": round(min(1.0, cpm / 60.0), 4) if is_burst else 0.0,
+            "iqr_anomaly_info": iqr_info,
+            "temporal_anomaly_score": anom,
+            "temporal_burst_score": anom,
         }
 
     # Bin counts across timeline
@@ -89,21 +115,34 @@ def compute_temporal_features(
 
     # IQR (Interquartile Range) Anomaly Calculation
     q75, q25 = np.percentile(bin_counts, [75, 25])
-    iqr = q75 - q25
-    iqr_upper_bound = q75 + (1.5 * iqr)
-    iqr_burst = 1.0 if (iqr > 0 and max_count > iqr_upper_bound) else 0.0
+    iqr = float(q75 - q25)
+    iqr_upper_bound = float(q75 + (1.5 * iqr))
+    outlier_count = int(np.sum(bin_counts > iqr_upper_bound)) if iqr > 0 else 0
+    iqr_burst = 1.0 if outlier_count > 0 else 0.0
 
     # Continuous temporal anomaly index (0.0 to 1.0)
-    # Scaled by zscore magnitude above 2.0 and IQR burst presence
     norm_z = max(0.0, min(1.0, (zscore_max - 2.0) / 4.0)) if zscore_max > 2.0 else 0.0
     anomaly_score = round(max(norm_z, 0.6 if iqr_burst else 0.0), 4)
+
+    iqr_info = {
+        "q25": round(float(q25), 2),
+        "q75": round(float(q75), 2),
+        "iqr": round(float(iqr), 2),
+        "upper_bound": round(float(iqr_upper_bound), 2),
+        "outlier_count": outlier_count,
+        "iqr_burst_detected": bool(iqr_burst),
+    }
 
     return {
         "duration_minutes": round(duration_minutes, 2),
         "average_comments_per_minute": round(mean_count / time_window_minutes, 2),
         "max_comments_per_minute": round(max_count / time_window_minutes, 2),
         "zscore_max": round(zscore_max, 2),
+        "z_score": round(zscore_max, 2),
         "zscore_burst_detected": zscore_burst,
         "iqr_burst_detected": iqr_burst,
+        "iqr_anomaly_info": iqr_info,
         "temporal_anomaly_score": anomaly_score,
+        "temporal_burst_score": anomaly_score,
     }
+

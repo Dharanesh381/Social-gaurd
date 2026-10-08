@@ -12,7 +12,7 @@ class HealthCheckResponse(BaseModel):
 
     status: str = Field(default="ok", description="Service health status")
     service: str = Field(default="social-guard", description="Service identifier")
-    version: str = Field(default="0.1.0", description="API version")
+    version: str = Field(default="1.0.0", description="API version")
 
 
 class CredibilityVerdict(str, Enum):

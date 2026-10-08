@@ -111,10 +111,18 @@ def vectorize_features(features_dict: dict[str, float]) -> np.ndarray:
     """Convert extracted features dictionary into an ordered 1D numpy array with log-scaling."""
     vector = []
     for name in FEATURE_NAMES:
-        val = features_dict.get(name, FEATURE_DEFAULTS[name])
+        val = float(features_dict.get(name, FEATURE_DEFAULTS[name]))
         # Apply log1p to heavily skewed power-law metrics
-        if name in ("followers", "following", "account_age_days", "average_posting_interval_seconds"):
+        if name in (
+            "followers",
+            "following",
+            "account_age_days",
+            "average_posting_interval_seconds",
+            "posts_per_day",
+            "comments_per_day",
+            "follower_following_ratio",
+        ):
             vector.append(math.log1p(max(0.0, val)))
         else:
-            vector.append(val)
+            vector.append(max(0.0, min(1.0, val)))
     return np.array(vector, dtype=float)

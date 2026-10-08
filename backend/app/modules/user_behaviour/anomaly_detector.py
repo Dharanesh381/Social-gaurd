@@ -20,33 +20,35 @@ POPULATION_STATS: dict[str, dict[str, float]] = {
     "follower_following_ratio": {"mean": 1.2, "std": 2.0, "q25": 0.5, "q75": 1.5},
     "duplicate_content_ratio": {"mean": 0.05, "std": 0.08, "q25": 0.0, "q75": 0.08},
     "hashtag_repetition_rate": {"mean": 0.12, "std": 0.15, "q25": 0.0, "q75": 0.18},
+    "average_posting_interval_seconds": {"mean": 28800.0, "std": 20000.0, "q25": 10800.0, "q75": 43200.0},
+    "account_age_days": {"mean": 600.0, "std": 500.0, "q25": 180.0, "q75": 900.0},
 }
 
 
-def create_baseline_training_dataset(n_samples: int = 500, random_seed: int = 42) -> np.ndarray:
+def create_baseline_training_dataset(n_samples: int = 600, random_seed: int = 42) -> np.ndarray:
     """Generate a realistic synthetic training distribution of authentic and varied social media accounts.
 
-    This ensures the model is trained on a distinct baseline distribution,
-    completely separate from test and inference inputs.
+    This ensures the model is trained on a distinct baseline distribution covering both
+    typical organic users and high-activity creators/organizations.
     """
     rng = np.random.default_rng(random_seed)
     data = []
 
     for _ in range(n_samples):
-        # 90% normal users, 10% high-activity / creator accounts
-        is_creator = rng.random() < 0.10
+        # 75% normal users, 25% high-activity / creator / media accounts
+        is_creator = rng.random() < 0.25
 
         if is_creator:
             sample = {
-                "account_age_days": float(rng.uniform(300, 3000)),
-                "followers": float(rng.uniform(5000, 100000)),
-                "following": float(rng.uniform(200, 1500)),
-                "posts_per_day": float(rng.uniform(3, 12)),
-                "comments_per_day": float(rng.uniform(5, 30)),
-                "average_posting_interval_seconds": float(rng.uniform(3600, 28800)),
-                "engagement_rate": float(rng.uniform(0.02, 0.08)),
-                "duplicate_content_ratio": float(rng.uniform(0.0, 0.10)),
-                "hashtag_repetition_rate": float(rng.uniform(0.05, 0.30)),
+                "account_age_days": float(rng.uniform(300, 3500)),
+                "followers": float(rng.uniform(2000, 200000)),
+                "following": float(rng.uniform(100, 3000)),
+                "posts_per_day": float(rng.uniform(2.0, 20.0)),
+                "comments_per_day": float(rng.uniform(3.0, 50.0)),
+                "average_posting_interval_seconds": float(rng.uniform(2000, 43200)),
+                "engagement_rate": float(rng.uniform(0.01, 0.10)),
+                "duplicate_content_ratio": float(rng.uniform(0.0, 0.08)),
+                "hashtag_repetition_rate": float(rng.uniform(0.02, 0.25)),
             }
         else:
             sample = {

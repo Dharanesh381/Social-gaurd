@@ -97,14 +97,36 @@ class EvidenceVerifier:
         all_candidate_claims = list(dict.fromkeys(extracted_claims + additional_queries))
 
         if not all_candidate_claims:
+            reason = "NON_FACTUAL"
+            if hasattr(self.extractor, "classify_filtered_reason"):
+                reason = self.extractor.classify_filtered_reason(post_text or "")
+
+            flags.append("NO_VERIFIABLE_CLAIMS_DETECTED")
+            if reason == "OPINION":
+                flags.append("OPINION_DETECTED")
+                explanation = "Content consists of subjective opinions rather than verifiable factual claims (Neutral 50/100 baseline)."
+            elif reason == "QUESTION":
+                flags.append("QUESTION_DETECTED")
+                explanation = "Content consists of questions or interrogative statements rather than verifiable factual claims (Neutral 50/100 baseline)."
+            elif reason == "GREETING":
+                flags.append("GREETING_DETECTED")
+                explanation = "Content consists of conversational greetings rather than verifiable factual claims (Neutral 50/100 baseline)."
+            else:
+                explanation = "No verifiable claim found. Post content contains no verifiable factual claims (Neutral 50/100 baseline)."
+
             return {
+                "score": 50.0,
                 "evidence_score": 50.0,
                 "status": "NO_FACT_CHECK_FOUND",
                 "claims": [],
                 "fact_checks": [],
+                "verified_count": 0,
+                "false_count": 0,
+                "unverified_count": 0,
+                "source_quality": 0.0,
+                "flags": flags,
+                "explanation": explanation,
                 "sources": [],
-                "flags": ["NO_VERIFIABLE_CLAIMS_DETECTED"],
-                "explanation": "No verifiable claim found. Post content contains no verifiable factual claims (Neutral 50/100 baseline).",
                 "diagnostics": {
                     "fact_check_status": "NO_CLAIM_DETECTED",
                     "query_used": [],
@@ -145,18 +167,22 @@ class EvidenceVerifier:
                     break
                 elif status_code == "RATE_LIMITED":
                     api_status_observed = "RATE_LIMITED"
-                    flags.append("FACT_CHECK_API_RATE_LIMITED")
+                    if "FACT_CHECK_API_RATE_LIMITED" not in flags:
+                        flags.append("FACT_CHECK_API_RATE_LIMITED")
                     break
                 elif status_code == "TIMEOUT":
                     api_status_observed = "TIMEOUT"
-                    flags.append("FACT_CHECK_API_TIMEOUT")
+                    if "FACT_CHECK_API_TIMEOUT" not in flags:
+                        flags.append("FACT_CHECK_API_TIMEOUT")
                 elif status_code == "MALFORMED_RESPONSE":
                     api_status_observed = "MALFORMED_RESPONSE"
-                    flags.append("FACT_CHECK_API_MALFORMED_RESPONSE")
+                    if "FACT_CHECK_API_MALFORMED_RESPONSE" not in flags:
+                        flags.append("FACT_CHECK_API_MALFORMED_RESPONSE")
                 elif status_code in ("API_ERROR", "CONNECTION_ERROR"):
                     api_status_observed = status_code
-                    flags.append("FACT_CHECK_API_UNAVAILABLE")
-                elif status_code == "SUCCESS":
+                    if "FACT_CHECK_API_UNAVAILABLE" not in flags:
+                        flags.append("FACT_CHECK_API_UNAVAILABLE")
+                elif status_code in ("SUCCESS", "NO_FACT_CHECK_FOUND"):
                     raw_claims = api_resp.get("claims", [])
                     if raw_claims:
                         found_for_this_claim = True
@@ -210,63 +236,48 @@ class EvidenceVerifier:
         # ----------------------------------------------------------------------
         if not all_matched_reviews:
             status = "NO_FACT_CHECK_FOUND"
-            evidence_score = 50.0
+            evidence_score = 50.0  # CRITICAL RULE: Neutral baseline (NEVER assume True or False)
 
-            # Evaluate linguistic credibility signals when unindexed in fact check DB
-            clean_post = post_text or ""
-            is_clickbait = bool(
-                re.search(
-                    r"\b(miracle\s+cure|secret\s+cure|100%\s+cure|shocking\s+truth|"
-                    r"they\s+don't\s+want\s+you\s+to\s+know|share\s+before\s+deleted|"
-                    r"government\s+secret|poisoning\s+the\s+population|secretly\s+killed)\b",
-                    clean_post,
-                    re.IGNORECASE,
-                )
-                or (clean_post.count("!") >= 4)
-                or (len(clean_post) > 40 and sum(1 for ch in clean_post if ch.isupper()) / max(1, len(clean_post)) > 0.40)
-            )
-
-            is_journalistic = bool(
-                re.search(
-                    r"\b(according\s+to\s+reuters|associated\s+press\s+reports|published\s+in\s+nature|"
-                    r"peer-reviewed\s+study|official\s+press\s+release|bbc\s+news\s+reports)\b",
-                    clean_post,
-                    re.IGNORECASE,
-                )
-            )
-
-            if is_clickbait:
-                evidence_score = 40.0
-                flags.append("SENSATIONALIST_UNVERIFIED_CLAIM")
-                explanation = "No matching fact-checks found; content exhibits viral sensationalist and conspiratorial language markers (Calibrated baseline 40/100)."
-            elif is_journalistic:
-                evidence_score = 65.0
-                flags.append("JOURNALISTIC_ATTRIBUTION_DETECTED")
-                explanation = "No fact-check found; content cites verified institutional or journalistic attribution (Calibrated baseline 65/100)."
-            elif api_status_observed == "API_KEY_MISSING":
+            if api_status_observed == "API_KEY_MISSING":
                 explanation = "Google Fact Check API key is not configured; evidence module assigned neutral baseline (50/100)."
+                if "GOOGLE_FACT_CHECK_API_KEY_NOT_CONFIGURED" not in flags:
+                    flags.append("GOOGLE_FACT_CHECK_API_KEY_NOT_CONFIGURED")
             elif api_status_observed == "TIMEOUT":
                 explanation = "Google Fact Check API request timed out; evidence module assigned neutral baseline (50/100)."
+                if "FACT_CHECK_API_TIMEOUT" not in flags:
+                    flags.append("FACT_CHECK_API_TIMEOUT")
             elif api_status_observed == "MALFORMED_RESPONSE":
                 explanation = "Google Fact Check API returned an invalid response; evidence module assigned neutral baseline (50/100)."
+                if "FACT_CHECK_API_MALFORMED_RESPONSE" not in flags:
+                    flags.append("FACT_CHECK_API_MALFORMED_RESPONSE")
             elif api_status_observed in ("CONNECTION_ERROR", "API_ERROR", "RATE_LIMITED"):
                 explanation = f"Google Fact Check API unavailable ({api_status_observed}); evidence module assigned neutral baseline (50/100)."
+                if "FACT_CHECK_API_UNAVAILABLE" not in flags and api_status_observed != "RATE_LIMITED":
+                    flags.append("FACT_CHECK_API_UNAVAILABLE")
             else:
+                if "UNINDEXED_CLAIM" not in flags:
+                    flags.append("UNINDEXED_CLAIM")
+                claim_str = f"'{extracted_claims[0]}'" if extracted_claims else "this topic"
                 explanation = (
-                    "No matching fact-check found in Google Fact Check index. "
+                    f"No matching fact-check found in Google Fact Check index for {claim_str}. "
                     "Assigned neutral baseline score (50/100). Absence of fact-checks does not verify or disprove content."
                 )
 
             return {
-                "evidence_score": evidence_score,
+                "score": 50.0,
+                "evidence_score": 50.0,
                 "status": status,
                 "claims": extracted_claims,
                 "fact_checks": [],
-                "sources": [],
+                "verified_count": 0,
+                "false_count": 0,
+                "unverified_count": len(extracted_claims),
+                "source_quality": 0.0,
                 "flags": flags,
                 "explanation": explanation,
+                "sources": [],
                 "diagnostics": {
-                    "fact_check_status": "NO_FACT_CHECK_FOUND" if api_status_observed == "SUCCESS" else api_status_observed,
+                    "fact_check_status": "NO_FACT_CHECK_FOUND" if api_status_observed in ("SUCCESS", "NO_FACT_CHECK_FOUND") else api_status_observed,
                     "query_used": queries_attempted,
                     "result_count": 0,
                     "source_count": 0,
@@ -283,39 +294,52 @@ class EvidenceVerifier:
 
         # Scale 0.0 - 1.0 continuous truth to 0 - 100 Evidence Score
         evidence_score = round(weighted_truth * 100.0, 2)
+        source_quality = round(total_weight / len(all_matched_reviews), 2) if all_matched_reviews else 0.0
 
-        # Determine Categorical Status
+        # Determine Categorical Counts and Status
         false_count = sum(1 for m in all_matched_reviews if m["rating_category"] in ("FALSE", "MOSTLY_FALSE"))
         true_count = sum(1 for m in all_matched_reviews if m["rating_category"] in ("TRUE", "MOSTLY_TRUE"))
         mixed_count = sum(1 for m in all_matched_reviews if m["rating_category"] == "MIXED")
+        verified_count = true_count
+        unverified_count = max(0, len(extracted_claims) - (1 if all_matched_reviews else 0))
 
-        if false_count > 0 and true_count == 0:
+        if false_count > 0 and true_count == 0 and mixed_count == 0:
             status = "CONTRADICTED"
             flags.append("DEBUNKED_BY_FACT_CHECKERS")
-            explanation = f"Extracted claim has been explicitly contradicted/debunked by {all_matched_reviews[0]['publisher']} ({all_matched_reviews[0]['raw_rating']})."
-        elif true_count > 0 and false_count == 0:
+            explanation = f"Extracted claim has been explicitly contradicted/debunked by {all_matched_reviews[0]['publisher']} ('{all_matched_reviews[0]['raw_rating']}')."
+        elif true_count > 0 and false_count == 0 and mixed_count == 0:
             status = "SUPPORTED"
             flags.append("VERIFIED_BY_FACT_CHECKERS")
-            explanation = f"Extracted claim is verified and supported by {all_matched_reviews[0]['publisher']} ({all_matched_reviews[0]['raw_rating']})."
+            explanation = f"Extracted claim is verified and supported by {all_matched_reviews[0]['publisher']} ('{all_matched_reviews[0]['raw_rating']}')."
         elif false_count > 0 and true_count > 0:
             status = "MIXED/MISLEADING"
             flags.append("CONFLICTING_FACT_CHECK_REVIEWS")
-            explanation = "Fact-check sources provide mixed or conflicting ratings for these claims."
+            explanation = f"Fact-check sources provide mixed or conflicting ratings for these claims ({true_count} verified vs {false_count} contradicted)."
         elif mixed_count > 0:
             status = "MIXED/MISLEADING"
-            explanation = "Fact-check sources indicate this claim is partially true or missing vital context."
+            flags.append("PARTIALLY_TRUE_CLAIM")
+            explanation = f"Fact-check sources indicate this claim is partially true or missing vital context ({all_matched_reviews[0]['publisher']}: '{all_matched_reviews[0]['raw_rating']}')."
         else:
             status = "INSUFFICIENT_EVIDENCE"
             explanation = "Matched fact-checks provided inconclusive ratings for this context."
 
+        if len(all_matched_reviews) > 1:
+            pub_names = list(dict.fromkeys(m["publisher"] for m in all_matched_reviews))
+            explanation += f" Aggregated across {len(all_matched_reviews)} reviews from {', '.join(pub_names[:3])}."
+
         return {
+            "score": evidence_score,
             "evidence_score": evidence_score,
             "status": status,
             "claims": extracted_claims,
             "fact_checks": all_matched_reviews,
-            "sources": sources_info,
+            "verified_count": verified_count,
+            "false_count": false_count,
+            "unverified_count": unverified_count,
+            "source_quality": source_quality,
             "flags": flags,
             "explanation": explanation,
+            "sources": sources_info,
             "diagnostics": {
                 "fact_check_status": "FACT_CHECK_FOUND",
                 "query_used": queries_attempted,

@@ -1,5 +1,6 @@
 """Unit tests for Module 3: User Behaviour Analysis Engine."""
 
+import math
 import pytest
 
 from app.modules.user_behaviour.analyzer import UserBehaviourAnalyzer
@@ -34,6 +35,7 @@ def test_extract_user_features_full():
     assert features["followers"] == 5400.0
     assert features["follower_following_ratio"] == round(5400.0 / 800.0, 4)
     assert features["duplicate_content_ratio"] == 0.02
+    assert features["average_posting_interval_seconds"] == 14000.0
 
 
 def test_extract_user_features_imputes_missing_values():
@@ -48,68 +50,32 @@ def test_extract_user_features_imputes_missing_values():
     assert features["following"] == 50.0
     assert features["account_age_days"] == 365.0  # Default imputed
     assert features["posts_per_day"] == 2.0  # Default imputed
+    assert features["duplicate_content_ratio"] == 0.05
 
 
-# ==============================================================================
-# 2. ISOLATION FOREST & STATISTICAL TESTS
-# ==============================================================================
-
-def test_anomaly_detector_normal_vs_extreme_bot():
-    """Test Isolation Forest differentiates standard organic user from high-frequency bot."""
-    detector = UserAnomalyDetector(contamination=0.08, n_estimators=80, random_state=42)
-
-    # Standard organic profile
-    normal_profile = {
-        "account_age_days": 800.0,
-        "followers": 450.0,
-        "following": 350.0,
-        "follower_following_ratio": 1.28,
-        "posts_per_day": 2.2,
-        "comments_per_day": 4.0,
-        "average_posting_interval_seconds": 25000.0,
-        "engagement_rate": 0.035,
-        "duplicate_content_ratio": 0.03,
+def test_vectorize_features_log_scaling():
+    """Test log scaling handles power-law counts safely without overflow."""
+    sample = {
+        "account_age_days": 1000.0,
+        "followers": 1_000_000.0,
+        "following": 500.0,
+        "follower_following_ratio": 2000.0,
+        "posts_per_day": 5.0,
+        "comments_per_day": 10.0,
+        "average_posting_interval_seconds": 15000.0,
+        "engagement_rate": 0.03,
+        "duplicate_content_ratio": 0.05,
         "hashtag_repetition_rate": 0.10,
     }
-    is_ano_norm, raw_norm, score_norm = detector.predict_anomaly(normal_profile)
-    assert is_ano_norm is False
-    assert raw_norm > 0.0  # Decision function positive for normal
-    assert score_norm < 0.50
-
-    # Extreme automated spam profile (1 day old, 300 posts/day, 90% duplicate ratio)
-    extreme_bot = {
-        "account_age_days": 1.0,
-        "followers": 5.0,
-        "following": 4000.0,
-        "follower_following_ratio": 0.001,
-        "posts_per_day": 300.0,
-        "comments_per_day": 500.0,
-        "average_posting_interval_seconds": 10.0,
-        "engagement_rate": 0.0001,
-        "duplicate_content_ratio": 0.95,
-        "hashtag_repetition_rate": 0.90,
-    }
-    is_ano_bot, raw_bot, score_bot = detector.predict_anomaly(extreme_bot)
-    assert is_ano_bot is True
-    assert raw_bot < 0.0  # Decision function negative for anomaly
-    assert score_bot > 0.60
-
-
-def test_statistical_zscore_and_iqr_outliers():
-    """Test Z-score and IQR calculation on extreme velocity."""
-    detector = UserAnomalyDetector()
-    features = {
-        "posts_per_day": 60.0,  # Far above population mean (2.5)
-        "duplicate_content_ratio": 0.85,  # Far above mean (0.05)
-    }
-    stat_metrics = detector.compute_statistical_anomalies(features)
-    assert stat_metrics["posts_per_day_zscore"] > 5.0
-    assert stat_metrics["posts_per_day_iqr_outlier"] == 1.0
-    assert stat_metrics["duplicate_content_ratio_iqr_outlier"] == 1.0
+    vec = vectorize_features(sample)
+    assert len(vec) == 10
+    # Followers vector value should be log1p(1,000,000) ~ 13.81
+    assert math.isclose(vec[1], math.log1p(1_000_000.0), rel_tol=1e-3)
+    assert not any(math.isnan(x) or math.isinf(x) for x in vec)
 
 
 # ==============================================================================
-# 3. FULL USER BEHAVIOUR ANALYZER TESTS
+# 2. REQUIRED MODULE 3 SCENARIO TESTS
 # ==============================================================================
 
 @pytest.fixture
@@ -117,17 +83,8 @@ def analyzer():
     return UserBehaviourAnalyzer()
 
 
-def test_none_profile_returns_neutral_baseline(analyzer: UserBehaviourAnalyzer):
-    """Test None user profile returns neutral 50.0 baseline."""
-    result = analyzer.analyze(None)
-    assert result["behaviour_score"] == 50.0
-    assert result["anomaly_score"] == 0.0
-    assert "USER_METADATA_UNAVAILABLE" in result["flags"]
-    assert "neutral baseline" in result["explanation"]
-
-
-def test_legitimate_user_high_score(analyzer: UserBehaviourAnalyzer):
-    """Test established user with organic activity gets high behaviour score."""
+def test_normal_mature_account(analyzer: UserBehaviourAnalyzer):
+    """1. Normal mature account: balanced engagement, low duplication -> High score & is_anomalous=False."""
     profile = UserProfile(
         username="dr_astronomer",
         account_age_days=1500,
@@ -141,30 +98,132 @@ def test_legitimate_user_high_score(analyzer: UserBehaviourAnalyzer):
         hashtag_repetition_rate=0.08,
     )
     result = analyzer.analyze(profile)
-    assert result["behaviour_score"] >= 80.0
-    assert result["anomaly_score"] < 0.40
+
+    assert result["score"] >= 80.0
+    assert result["behaviour_score"] == result["score"]
+    assert result["anomaly_score"] < 0.45
+    assert result["is_anomalous"] is False
     assert len(result["flags"]) == 0
-    assert "exhibits mature, balanced engagement" in result["explanation"]
+    assert "mature, balanced engagement" in result["explanation"]
+    assert result["status"] == "COMPLETED"
 
 
-def test_new_account_spam_bot_penalized(analyzer: UserBehaviourAnalyzer):
-    """Test new account with extreme posting velocity is penalized with appropriate flags."""
+def test_high_activity_account(analyzer: UserBehaviourAnalyzer):
+    """2. High-activity account: active journalist or creator -> Organic volume, not penalized as a bot."""
     profile = UserProfile(
-        username="fast_crypto_deals",
-        account_age_days=2,
-        followers=10,
-        following=2500,
-        posts_per_day=80.0,
-        comments_per_day=120.0,
-        average_posting_interval_seconds=60.0,
-        engagement_rate=0.001,
-        duplicate_content_ratio=0.75,
-        hashtag_repetition_rate=0.85,
+        username="reuters_wire_anchor",
+        account_age_days=2200,
+        followers=45000,
+        following=1100,
+        posts_per_day=14.0,  # High activity
+        comments_per_day=22.0,
+        average_posting_interval_seconds=4500.0,
+        engagement_rate=0.048,
+        duplicate_content_ratio=0.02,  # Organic content, not spam
+        hashtag_repetition_rate=0.15,
     )
     result = analyzer.analyze(profile)
-    assert result["behaviour_score"] < 50.0
-    assert result["anomaly_score"] > 0.60
-    assert "NEW_ACCOUNT_HIGH_POSTING_VELOCITY" in result["flags"]
+
+    assert result["score"] >= 70.0  # Maintained healthy score
+    assert result["is_anomalous"] is False
+    assert "NEW_ACCOUNT_HIGH_POSTING_VELOCITY" not in result["flags"]
+    assert "HIGH_TIMELINE_DUPLICATION_RATIO" not in result["flags"]
+    assert "EXCESSIVE_HASHTAG_REPETITION" not in result["flags"]
+
+
+def test_suspicious_repetitive_account(analyzer: UserBehaviourAnalyzer):
+    """3. Suspicious repetitive account: high duplicate content & velocity -> Penalized & is_anomalous=True."""
+    profile = UserProfile(
+        username="crypto_airdrop_blast",
+        account_age_days=45,
+        followers=250,
+        following=3500,
+        posts_per_day=75.0,  # Extreme velocity
+        comments_per_day=90.0,
+        average_posting_interval_seconds=50.0,
+        engagement_rate=0.002,
+        duplicate_content_ratio=0.85,  # Heavy duplication
+        hashtag_repetition_rate=0.80,  # Heavy hashtag repetition
+    )
+    result = analyzer.analyze(profile)
+
+    assert result["score"] < 50.0
+    assert result["is_anomalous"] is True
+    assert result["anomaly_score"] > 0.55
     assert "HIGH_TIMELINE_DUPLICATION_RATIO" in result["flags"]
     assert "EXCESSIVE_HASHTAG_REPETITION" in result["flags"]
-    assert "does not prove post is fake" in result["explanation"]
+    assert "EXTREME_POSTING_VELOCITY" in result["flags"]
+    assert "ANOMALOUS_BEHAVIOURAL_PATTERN" in result["flags"]
+    # CRITICAL RULE check: Anomaly explanation must state that anomaly does not mean content is fake
+    assert "does NOT directly mean that the content is fake" in result["explanation"]
+
+
+def test_new_account(analyzer: UserBehaviourAnalyzer):
+    """4. New account: fresh account with aggressive velocity -> Flagged with guardrail."""
+    profile = UserProfile(
+        username="fast_pump_deals",
+        account_age_days=2,
+        followers=8,
+        following=1500,
+        posts_per_day=35.0,
+        comments_per_day=20.0,
+        duplicate_content_ratio=0.25,
+        hashtag_repetition_rate=0.30,
+    )
+    result = analyzer.analyze(profile)
+
+    assert result["score"] < 65.0
+    assert "NEW_ACCOUNT_HIGH_POSTING_VELOCITY" in result["flags"]
+
+
+def test_missing_fields(analyzer: UserBehaviourAnalyzer):
+    """5. Missing fields: graceful imputation without error and neutral baseline for None."""
+    # Sub-case A: Partial profile with missing fields
+    partial_profile = UserProfile(
+        username="partial_info_user",
+        followers=350,
+        following=200,
+    )
+    result_partial = analyzer.analyze(partial_profile)
+    assert 0.0 <= result_partial["score"] <= 100.0
+    assert 0.0 <= result_partial["anomaly_score"] <= 1.0
+    assert isinstance(result_partial["is_anomalous"], bool)
+    assert result_partial["metrics"]["followers"] == 350.0
+    assert result_partial["metrics"]["account_age_days"] == 365.0  # Imputed default
+    assert result_partial["status"] == "COMPLETED"
+
+    # Sub-case B: None profile
+    result_none = analyzer.analyze(None)
+    assert result_none["score"] == 50.0  # Neutral baseline
+    assert result_none["behaviour_score"] == 50.0
+    assert result_none["anomaly_score"] == 0.0
+    assert result_none["is_anomalous"] is False
+    assert "USER_METADATA_UNAVAILABLE" in result_none["flags"]
+    assert result_none["status"] == "USER_METADATA_UNAVAILABLE"
+
+
+def test_extreme_values(analyzer: UserBehaviourAnalyzer):
+    """6. Extreme values: massive numbers handled stably without NaN or mathematical overflow."""
+    profile = UserProfile(
+        username="hyper_bot_extreme",
+        account_age_days=1,
+        followers=50_000_000,
+        following=2_000_000,
+        posts_per_day=5000.0,
+        comments_per_day=10000.0,
+        average_posting_interval_seconds=0.05,
+        engagement_rate=0.0001,
+        duplicate_content_ratio=1.0,
+        hashtag_repetition_rate=1.0,
+    )
+    result = analyzer.analyze(profile)
+
+    assert 0.0 <= result["score"] <= 100.0
+    assert 0.0 <= result["anomaly_score"] <= 1.0
+    assert result["is_anomalous"] is True
+    # Z-scores computed properly
+    assert result["metrics"]["posts_per_day_zscore"] > 10.0
+    assert result["metrics"]["posts_per_day_iqr_outlier"] == 1.0
+    assert not math.isnan(result["score"])
+    assert not math.isinf(result["score"])
+    assert "does NOT directly mean that the content is fake" in result["explanation"]

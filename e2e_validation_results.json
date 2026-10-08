@@ -1,0 +1,2744 @@
+{
+  "TEST 1 \u2014 LIKELY REAL": {
+    "data": {
+      "request_id": "test_e2e_1_real",
+      "consolidated_score": 65.5,
+      "classification": "PROBABLY REAL",
+      "ai_generation_probability": 0.262,
+      "explanation": "Social Guard evaluates this content as PROBABLY REAL (Credibility Score: 65.5/100). Module contributions: Evidence 20.0 pts (40%), Similar Content 13.8 pts (25%), Comment Analysis 19.0 pts (20%), User Behaviour 12.8 pts (15%). Key risk: Similar content was found from an earlier timestamp from 2021-05-20, indicating recycled material in local corpus. No matching indexed fact-check was found on Google Fact Check Tools; evidence module remained neutral.",
+      "module_scores": {
+        "comment_analysis": 95.0,
+        "evidence_verification": 50.0,
+        "user_behaviour": 85.0,
+        "similar_content": 55.0
+      },
+      "request_info": {
+        "request_id": "test_e2e_1_real",
+        "received_at": "2026-10-08T17:29:19.683939+00:00",
+        "has_custom_weights": false
+      },
+      "post_info": {
+        "platform": "twitter",
+        "post_id": null,
+        "text": "NASA rovers confirm detection of subsurface water ice reserves on Mars through deep radar soundings. #Space #Mars #NASA",
+        "text_length": 119,
+        "timestamp": null,
+        "hashtags": [
+          "#Space",
+          "#Mars",
+          "#NASA"
+        ],
+        "media_count": 1,
+        "media_urls": [
+          "https://example.com/mars_chart.png"
+        ],
+        "comments_count": 2,
+        "has_author_metadata": true,
+        "author_username": "science_reporter"
+      },
+      "module_1": {
+        "score": 95.0,
+        "status": "PARTIAL",
+        "comment_count": 2,
+        "duplicate_ratio": 0.0,
+        "semantic_similarity": 0.247,
+        "clusters": [],
+        "temporal_burst_score": 0.0,
+        "z_score": 0.0,
+        "iqr_outliers": [],
+        "emoji_entropy": 0.0,
+        "debunk_ratio": 0.0,
+        "support_ratio": 0.5,
+        "flags": [
+          "COMMENTS_VERIFY_CLAIM"
+        ],
+        "explanation": "Analyzed 2 comments with status [SUPPORTED]. Community support detected: 1 comments corroborate the post.",
+        "metrics": {
+          "comment_count": 2,
+          "duplicate_ratio": 0.0,
+          "exact_duplicate_ratio": 0.0,
+          "near_duplicate_ratio": 0.0,
+          "average_similarity": 0.247,
+          "cluster_count": 2,
+          "largest_cluster_size": 1,
+          "emoji_ratio": 0.5,
+          "emoji_entropy": 0.0,
+          "excessive_emoji_ratio": 0.0,
+          "temporal_anomaly_score": 0.0,
+          "temporal_burst_score": 0.0,
+          "average_comments_per_minute": 0.0,
+          "max_comments_per_minute": 0.0,
+          "zscore_max": 0.0,
+          "z_score": 0.0,
+          "debunk_ratio": 0.0,
+          "support_ratio": 0.5
+        },
+        "fact_check": {
+          "verdict": "SUPPORTED_BY_COMMENTS",
+          "debunk_ratio": 0.0,
+          "support_ratio": 0.5,
+          "debunk_count": 0,
+          "support_count": 1,
+          "has_fact_checker_reference": false,
+          "debunking_comments": [],
+          "extracted_comment_claims": [],
+          "summary": "Comments generally confirm or corroborate this post (1 of 2 supportive)."
+        }
+      },
+      "module_2": {
+        "score": 50.0,
+        "status": "PARTIAL",
+        "evidence_state": "NO_FACT_CHECK_FOUND",
+        "claims": [
+          "NASA rovers confirm detection of subsurface water ice reserves on Mars through deep radar soundings"
+        ],
+        "fact_checks": [],
+        "verified_count": 0,
+        "false_count": 0,
+        "unverified_count": 1,
+        "source_quality": 0.0,
+        "sources": [],
+        "flags": [
+          "UNINDEXED_CLAIM"
+        ],
+        "explanation": "No matching fact-check found in Google Fact Check index for 'NASA rovers confirm detection of subsurface water ice reserves on Mars through deep radar soundings'. Assigned neutral baseline score (50/100). Absence of fact-checks does not verify or disprove content."
+      },
+      "module_3": {
+        "score": 85.0,
+        "status": "COMPLETED",
+        "anomaly_score": 0.4583,
+        "is_anomalous": false,
+        "metrics": {
+          "account_age_days": 1400.0,
+          "followers": 0.0,
+          "following": 0.0,
+          "follower_following_ratio": 0.0,
+          "posts_per_day": 2.0,
+          "comments_per_day": 3.0,
+          "average_posting_interval_seconds": 43200.0,
+          "engagement_rate": 0.03,
+          "duplicate_content_ratio": 0.05,
+          "hashtag_repetition_rate": 0.08,
+          "posts_per_day_zscore": -0.17,
+          "posts_per_day_iqr_outlier": 0.0,
+          "comments_per_day_zscore": -0.2,
+          "comments_per_day_iqr_outlier": 0.0,
+          "follower_following_ratio_zscore": -0.6,
+          "follower_following_ratio_iqr_outlier": 0.0,
+          "duplicate_content_ratio_zscore": 0.0,
+          "duplicate_content_ratio_iqr_outlier": 0.0,
+          "hashtag_repetition_rate_zscore": -0.27,
+          "hashtag_repetition_rate_iqr_outlier": 0.0,
+          "average_posting_interval_seconds_zscore": 0.72,
+          "average_posting_interval_seconds_iqr_outlier": 0.0,
+          "account_age_days_zscore": 1.6,
+          "account_age_days_iqr_outlier": 0.0,
+          "raw_isolation_forest_score": 0.0208,
+          "is_anomalous": false
+        },
+        "flags": [],
+        "explanation": "Account 'science_reporter' exhibits mature, balanced engagement patterns with normal posting velocity (2.0 posts/day) and longevity (1400 days)."
+      },
+      "module_4": {
+        "score": 55.0,
+        "status": "COMPLETED",
+        "recycled_content": true,
+        "visual_similarity": 0.0,
+        "semantic_similarity": 0.8281,
+        "keyword_similarity": 0.75,
+        "matches": [
+          {
+            "item_id": "hist_001",
+            "text": "NASA rovers detect liquid water beneath Martian polar ice caps in deep radar soundings.",
+            "visual_similarity": 0.0,
+            "semantic_similarity": 0.8281,
+            "keyword_similarity": 0.75,
+            "historical_age_days": 1967.2,
+            "first_seen_timestamp": "2021-05-20T12:00:00+00:00",
+            "is_known_debunked": false,
+            "source_context": "Verified 2021 scientific radar research announcement"
+          },
+          {
+            "item_id": "hist_002",
+            "text": "BREAKING: Governments announce emergency lockdown protocols across all international airports due to mystery virus!",
+            "visual_similarity": 0.0,
+            "semantic_similarity": 0.1537,
+            "keyword_similarity": 0.0,
+            "historical_age_days": 2398.4,
+            "first_seen_timestamp": "2020-03-15T08:30:00+00:00",
+            "is_known_debunked": true,
+            "source_context": "Debunked 2020 recycled viral hoax"
+          },
+          {
+            "item_id": "hist_003",
+            "text": "Free crypto airdrop giveaway! Send 0.1 ETH to verify your wallet and receive 2.0 ETH immediately.",
+            "visual_similarity": 0.0,
+            "semantic_similarity": 0.1092,
+            "keyword_similarity": 0.0,
+            "historical_age_days": 1732.7,
+            "first_seen_timestamp": "2022-01-10T00:00:00+00:00",
+            "is_known_debunked": true,
+            "source_context": "Recycled cryptocurrency doubling scam template"
+          }
+        ],
+        "flags": [
+          "LIMITED_LOCAL_CORPUS_EVALUATED",
+          "RECYCLED_HISTORICAL_CONTENT_DETECTED",
+          "HIGH_HASHTAG_COORDINATION"
+        ],
+        "explanation": "Content matches archived material in local reference corpus (semantic similarity: 0.83, visual: 0.00) first seen 1967 days ago (2021-05-20). Note: Recycled content does not automatically prove malicious intent.",
+        "earliest_matching_timestamp": "2021-05-20T12:00:00+00:00",
+        "corpus_size": 3
+      },
+      "module_5": {
+        "final_score": 65.5,
+        "score": 65.5,
+        "status": "COMPLETED",
+        "classification": "PROBABLY REAL",
+        "confidence_level": "MEDIUM",
+        "confidence_interval": [
+          59.5,
+          71.5
+        ],
+        "formula_applied": "0.20*M1 + 0.40*M2 + 0.15*M3 + 0.25*M4",
+        "weights_applied": {
+          "comment_score": 0.2,
+          "evidence_score": 0.4,
+          "behaviour_score": 0.15,
+          "similarity_score": 0.25
+        },
+        "module_scores": {
+          "comment_analysis": 95.0,
+          "evidence_verification": 50.0,
+          "user_behaviour": 85.0,
+          "similar_content": 55.0
+        },
+        "weighted_contributions": {
+          "comment_analysis": 19.0,
+          "evidence_verification": 20.0,
+          "user_behaviour": 12.75,
+          "similar_content": 13.75,
+          "M1": 19.0,
+          "M2": 20.0,
+          "M3": 12.75,
+          "M4": 13.75
+        },
+        "flags": [],
+        "summary_explanation": "Final Credibility Score is 65.5/100 (PROBABLY REAL). Evidence Verification contributed 20.0 pts (weight 40%), Similar Content contributed 13.8 pts (weight 25%), Comment Analysis contributed 19.0 pts (weight 20%), and User Behaviour contributed 12.8 pts (weight 15%)."
+      },
+      "xai_explanation": {
+        "summary": "Social Guard evaluates this content as PROBABLY REAL (Credibility Score: 65.5/100). Module contributions: Evidence 20.0 pts (40%), Similar Content 13.8 pts (25%), Comment Analysis 19.0 pts (20%), User Behaviour 12.8 pts (15%). Key risk: Similar content was found from an earlier timestamp from 2021-05-20, indicating recycled material in local corpus. No matching indexed fact-check was found on Google Fact Check Tools; evidence module remained neutral.",
+        "explanation_summary": "Social Guard evaluates this content as PROBABLY REAL (Credibility Score: 65.5/100). Module contributions: Evidence 20.0 pts (40%), Similar Content 13.8 pts (25%), Comment Analysis 19.0 pts (20%), User Behaviour 12.8 pts (15%). Key risk: Similar content was found from an earlier timestamp from 2021-05-20, indicating recycled material in local corpus. No matching indexed fact-check was found on Google Fact Check Tools; evidence module remained neutral.",
+        "positive_factors": [
+          {
+            "factor": "Community Corroboration: Extracted comments corroborate and affirm the content.",
+            "module": "comment_analysis",
+            "impact_weight": 0.15,
+            "support_ratio": 0.5
+          },
+          {
+            "factor": "Author account demonstrates mature longevity (1400 days) and balanced activity.",
+            "module": "user_behaviour",
+            "impact_weight": 0.15,
+            "behaviour_score": 85.0
+          }
+        ],
+        "negative_factors": [
+          {
+            "factor": "Similar content was found from an earlier timestamp from 2021-05-20, indicating recycled material in local corpus.",
+            "module": "similar_content",
+            "impact_weight": 0.25,
+            "similarity_score": 55.0
+          }
+        ],
+        "module_explanations": {
+          "evidence_verification": "No existing fact-check was found on Google Fact Check Tools; evidence module remained neutral (50/100).",
+          "similar_content": "Similar content was found from an earlier timestamp from 2021-05-20, indicating recycled material.",
+          "comment_analysis": "2 comment(s) extracted; sample size too small for statistical coordination analysis.",
+          "user_behaviour": "Author account demonstrates mature longevity (1400 days) and balanced activity."
+        },
+        "confidence_notes": [
+          "Absence of indexed fact-checks does not verify or disprove the post.",
+          "Text displays human-written stylistic distribution (Statistical AI indicator: 26.2%). Note: Human-authored text does not guarantee factual accuracy."
+        ]
+      },
+      "processing_timings": {
+        "module_1_comments_ms": 119.85,
+        "module_2_evidence_ms": 2403.17,
+        "module_3_behaviour_ms": 13.81,
+        "module_4_similarity_ms": 953.09,
+        "module_5_fusion_ms": 0.35,
+        "ai_detection_ms": 1503.81,
+        "explainability_ms": 0.03,
+        "total_pipeline_ms": 4995.68
+      },
+      "warnings": [
+        "No post timestamp provided; temporal age delta calculated from current time.",
+        "No definitive fact-checks indexed for post claim; evaluated at neutral baseline."
+      ],
+      "errors": [],
+      "module_results": {
+        "timings_ms": {
+          "comment_analysis_ms": 119.85,
+          "evidence_verification_ms": 2403.17,
+          "user_behaviour_ms": 13.81,
+          "similar_content_ms": 953.09,
+          "score_fusion_ms": 0.35,
+          "ai_detection_ms": 1503.81,
+          "explainability_ms": 0.03,
+          "total_pipeline_ms": 4995.68
+        },
+        "module_breakdowns": {
+          "comments": {
+            "score": 95.0,
+            "status": "PARTIAL",
+            "comment_count": 2,
+            "duplicate_ratio": 0.0,
+            "semantic_similarity": 0.247,
+            "clusters": [],
+            "temporal_burst_score": 0.0,
+            "z_score": 0.0,
+            "iqr_outliers": [],
+            "emoji_entropy": 0.0,
+            "debunk_ratio": 0.0,
+            "support_ratio": 0.5,
+            "flags": [
+              "COMMENTS_VERIFY_CLAIM"
+            ],
+            "explanation": "Analyzed 2 comments with status [SUPPORTED]. Community support detected: 1 comments corroborate the post.",
+            "metrics": {
+              "comment_count": 2,
+              "duplicate_ratio": 0.0,
+              "exact_duplicate_ratio": 0.0,
+              "near_duplicate_ratio": 0.0,
+              "average_similarity": 0.247,
+              "cluster_count": 2,
+              "largest_cluster_size": 1,
+              "emoji_ratio": 0.5,
+              "emoji_entropy": 0.0,
+              "excessive_emoji_ratio": 0.0,
+              "temporal_anomaly_score": 0.0,
+              "temporal_burst_score": 0.0,
+              "average_comments_per_minute": 0.0,
+              "max_comments_per_minute": 0.0,
+              "zscore_max": 0.0,
+              "z_score": 0.0,
+              "debunk_ratio": 0.0,
+              "support_ratio": 0.5
+            },
+            "fact_check": {
+              "verdict": "SUPPORTED_BY_COMMENTS",
+              "debunk_ratio": 0.0,
+              "support_ratio": 0.5,
+              "debunk_count": 0,
+              "support_count": 1,
+              "has_fact_checker_reference": false,
+              "debunking_comments": [],
+              "extracted_comment_claims": [],
+              "summary": "Comments generally confirm or corroborate this post (1 of 2 supportive)."
+            }
+          },
+          "evidence": {
+            "score": 50.0,
+            "status": "PARTIAL",
+            "evidence_state": "NO_FACT_CHECK_FOUND",
+            "claims": [
+              "NASA rovers confirm detection of subsurface water ice reserves on Mars through deep radar soundings"
+            ],
+            "fact_checks": [],
+            "verified_count": 0,
+            "false_count": 0,
+            "unverified_count": 1,
+            "source_quality": 0.0,
+            "sources": [],
+            "flags": [
+              "UNINDEXED_CLAIM"
+            ],
+            "explanation": "No matching fact-check found in Google Fact Check index for 'NASA rovers confirm detection of subsurface water ice reserves on Mars through deep radar soundings'. Assigned neutral baseline score (50/100). Absence of fact-checks does not verify or disprove content."
+          },
+          "user_behaviour": {
+            "score": 85.0,
+            "status": "COMPLETED",
+            "anomaly_score": 0.4583,
+            "is_anomalous": false,
+            "metrics": {
+              "account_age_days": 1400.0,
+              "followers": 0.0,
+              "following": 0.0,
+              "follower_following_ratio": 0.0,
+              "posts_per_day": 2.0,
+              "comments_per_day": 3.0,
+              "average_posting_interval_seconds": 43200.0,
+              "engagement_rate": 0.03,
+              "duplicate_content_ratio": 0.05,
+              "hashtag_repetition_rate": 0.08,
+              "posts_per_day_zscore": -0.17,
+              "posts_per_day_iqr_outlier": 0.0,
+              "comments_per_day_zscore": -0.2,
+              "comments_per_day_iqr_outlier": 0.0,
+              "follower_following_ratio_zscore": -0.6,
+              "follower_following_ratio_iqr_outlier": 0.0,
+              "duplicate_content_ratio_zscore": 0.0,
+              "duplicate_content_ratio_iqr_outlier": 0.0,
+              "hashtag_repetition_rate_zscore": -0.27,
+              "hashtag_repetition_rate_iqr_outlier": 0.0,
+              "average_posting_interval_seconds_zscore": 0.72,
+              "average_posting_interval_seconds_iqr_outlier": 0.0,
+              "account_age_days_zscore": 1.6,
+              "account_age_days_iqr_outlier": 0.0,
+              "raw_isolation_forest_score": 0.0208,
+              "is_anomalous": false
+            },
+            "flags": [],
+            "explanation": "Account 'science_reporter' exhibits mature, balanced engagement patterns with normal posting velocity (2.0 posts/day) and longevity (1400 days)."
+          },
+          "similarity": {
+            "score": 55.0,
+            "status": "COMPLETED",
+            "recycled_content": true,
+            "visual_similarity": 0.0,
+            "semantic_similarity": 0.8281,
+            "keyword_similarity": 0.75,
+            "matches": [
+              {
+                "item_id": "hist_001",
+                "text": "NASA rovers detect liquid water beneath Martian polar ice caps in deep radar soundings.",
+                "visual_similarity": 0.0,
+                "semantic_similarity": 0.8281,
+                "keyword_similarity": 0.75,
+                "historical_age_days": 1967.2,
+                "first_seen_timestamp": "2021-05-20T12:00:00+00:00",
+                "is_known_debunked": false,
+                "source_context": "Verified 2021 scientific radar research announcement"
+              },
+              {
+                "item_id": "hist_002",
+                "text": "BREAKING: Governments announce emergency lockdown protocols across all international airports due to mystery virus!",
+                "visual_similarity": 0.0,
+                "semantic_similarity": 0.1537,
+                "keyword_similarity": 0.0,
+                "historical_age_days": 2398.4,
+                "first_seen_timestamp": "2020-03-15T08:30:00+00:00",
+                "is_known_debunked": true,
+                "source_context": "Debunked 2020 recycled viral hoax"
+              },
+              {
+                "item_id": "hist_003",
+                "text": "Free crypto airdrop giveaway! Send 0.1 ETH to verify your wallet and receive 2.0 ETH immediately.",
+                "visual_similarity": 0.0,
+                "semantic_similarity": 0.1092,
+                "keyword_similarity": 0.0,
+                "historical_age_days": 1732.7,
+                "first_seen_timestamp": "2022-01-10T00:00:00+00:00",
+                "is_known_debunked": true,
+                "source_context": "Recycled cryptocurrency doubling scam template"
+              }
+            ],
+            "flags": [
+              "LIMITED_LOCAL_CORPUS_EVALUATED",
+              "RECYCLED_HISTORICAL_CONTENT_DETECTED",
+              "HIGH_HASHTAG_COORDINATION"
+            ],
+            "explanation": "Content matches archived material in local reference corpus (semantic similarity: 0.83, visual: 0.00) first seen 1967 days ago (2021-05-20). Note: Recycled content does not automatically prove malicious intent.",
+            "earliest_matching_timestamp": "2021-05-20T12:00:00+00:00",
+            "corpus_size": 3
+          },
+          "fusion": {
+            "final_score": 65.5,
+            "score": 65.5,
+            "status": "COMPLETED",
+            "classification": "PROBABLY REAL",
+            "confidence_level": "MEDIUM",
+            "confidence_interval": [
+              59.5,
+              71.5
+            ],
+            "formula_applied": "0.20*M1 + 0.40*M2 + 0.15*M3 + 0.25*M4",
+            "weights_applied": {
+              "comment_score": 0.2,
+              "evidence_score": 0.4,
+              "behaviour_score": 0.15,
+              "similarity_score": 0.25
+            },
+            "module_scores": {
+              "comment_analysis": 95.0,
+              "evidence_verification": 50.0,
+              "user_behaviour": 85.0,
+              "similar_content": 55.0
+            },
+            "weighted_contributions": {
+              "comment_analysis": 19.0,
+              "evidence_verification": 20.0,
+              "user_behaviour": 12.75,
+              "similar_content": 13.75,
+              "M1": 19.0,
+              "M2": 20.0,
+              "M3": 12.75,
+              "M4": 13.75
+            },
+            "flags": [],
+            "summary_explanation": "Final Credibility Score is 65.5/100 (PROBABLY REAL). Evidence Verification contributed 20.0 pts (weight 40%), Similar Content contributed 13.8 pts (weight 25%), Comment Analysis contributed 19.0 pts (weight 20%), and User Behaviour contributed 12.8 pts (weight 15%)."
+          }
+        },
+        "explainability": {
+          "summary": "Social Guard evaluates this content as PROBABLY REAL (Credibility Score: 65.5/100). Module contributions: Evidence 20.0 pts (40%), Similar Content 13.8 pts (25%), Comment Analysis 19.0 pts (20%), User Behaviour 12.8 pts (15%). Key risk: Similar content was found from an earlier timestamp from 2021-05-20, indicating recycled material in local corpus. No matching indexed fact-check was found on Google Fact Check Tools; evidence module remained neutral.",
+          "explanation_summary": "Social Guard evaluates this content as PROBABLY REAL (Credibility Score: 65.5/100). Module contributions: Evidence 20.0 pts (40%), Similar Content 13.8 pts (25%), Comment Analysis 19.0 pts (20%), User Behaviour 12.8 pts (15%). Key risk: Similar content was found from an earlier timestamp from 2021-05-20, indicating recycled material in local corpus. No matching indexed fact-check was found on Google Fact Check Tools; evidence module remained neutral.",
+          "positive_factors": [
+            {
+              "factor": "Community Corroboration: Extracted comments corroborate and affirm the content.",
+              "module": "comment_analysis",
+              "impact_weight": 0.15,
+              "support_ratio": 0.5
+            },
+            {
+              "factor": "Author account demonstrates mature longevity (1400 days) and balanced activity.",
+              "module": "user_behaviour",
+              "impact_weight": 0.15,
+              "behaviour_score": 85.0
+            }
+          ],
+          "negative_factors": [
+            {
+              "factor": "Similar content was found from an earlier timestamp from 2021-05-20, indicating recycled material in local corpus.",
+              "module": "similar_content",
+              "impact_weight": 0.25,
+              "similarity_score": 55.0
+            }
+          ],
+          "module_explanations": {
+            "evidence_verification": "No existing fact-check was found on Google Fact Check Tools; evidence module remained neutral (50/100).",
+            "similar_content": "Similar content was found from an earlier timestamp from 2021-05-20, indicating recycled material.",
+            "comment_analysis": "2 comment(s) extracted; sample size too small for statistical coordination analysis.",
+            "user_behaviour": "Author account demonstrates mature longevity (1400 days) and balanced activity."
+          },
+          "confidence_notes": [
+            "Absence of indexed fact-checks does not verify or disprove the post.",
+            "Text displays human-written stylistic distribution (Statistical AI indicator: 26.2%). Note: Human-authored text does not guarantee factual accuracy."
+          ]
+        },
+        "ai_detection": {
+          "media_ai_detection": {
+            "ai_generation_probability": null,
+            "media_type": "image",
+            "status": "DOWNLOAD_FAILED",
+            "explanation": "Failed to download image from source (HTTP 404)."
+          },
+          "text_ai_detection": {
+            "ai_generation_probability": 26.2,
+            "confidence": "MEDIUM",
+            "model_used": "PerplexityTextAIDetector (Lexical Diversity & Uniformity Entropy)",
+            "metrics": {
+              "type_token_ratio": 1.0,
+              "length_std": 2.38,
+              "word_count": 18
+            },
+            "status": "ANALYZED"
+          }
+        },
+        "flags": [
+          "LIMITED_LOCAL_CORPUS_EVALUATED",
+          "HIGH_HASHTAG_COORDINATION",
+          "RECYCLED_HISTORICAL_CONTENT_DETECTED",
+          "UNINDEXED_CLAIM",
+          "NO_POST_TIMESTAMP",
+          "COMMENTS_VERIFY_CLAIM"
+        ],
+        "warnings": [
+          "No post timestamp provided; temporal age delta calculated from current time.",
+          "No definitive fact-checks indexed for post claim; evaluated at neutral baseline."
+        ],
+        "errors": []
+      },
+      "created_at": "2026-10-08T17:29:19.683971Z"
+    },
+    "math_match": true
+  },
+  "TEST 2 \u2014 UNCERTAIN": {
+    "data": {
+      "request_id": "test_e2e_2_uncertain",
+      "consolidated_score": 69.87,
+      "classification": "PROBABLY REAL",
+      "ai_generation_probability": 0.0761,
+      "explanation": "Social Guard evaluates this content as PROBABLY REAL (Credibility Score: 69.9/100). Module contributions: Evidence 20.0 pts (40%), Similar Content 21.2 pts (25%), Comment Analysis 16.0 pts (20%), User Behaviour 12.6 pts (15%). Key strength: No matching item found in current 3-item local historical corpus (no recycled hoax detected). No matching indexed fact-check was found on Google Fact Check Tools; evidence module remained neutral.",
+      "module_scores": {
+        "comment_analysis": 80.0,
+        "evidence_verification": 50.0,
+        "user_behaviour": 84.1,
+        "similar_content": 85.0
+      },
+      "request_info": {
+        "request_id": "test_e2e_2_uncertain",
+        "received_at": "2026-10-08T17:29:20.498263+00:00",
+        "has_custom_weights": false
+      },
+      "post_info": {
+        "platform": "reddit",
+        "post_id": null,
+        "text": "Local laboratory team claims discovery of room-temperature superconductor in preliminary benchtop sample.",
+        "text_length": 105,
+        "timestamp": null,
+        "hashtags": [
+          "#Physics",
+          "#Superconductor"
+        ],
+        "media_count": 0,
+        "media_urls": [],
+        "comments_count": 1,
+        "has_author_metadata": true,
+        "author_username": "curious_physicist"
+      },
+      "module_1": {
+        "score": 80.0,
+        "status": "PARTIAL",
+        "comment_count": 1,
+        "duplicate_ratio": 0.0,
+        "semantic_similarity": 0.0,
+        "clusters": [],
+        "temporal_burst_score": 0.0,
+        "z_score": 0.0,
+        "iqr_outliers": [],
+        "emoji_entropy": 0.0,
+        "debunk_ratio": 0.0,
+        "support_ratio": 1.0,
+        "flags": [
+          "COMMENTS_VERIFY_CLAIM",
+          "SINGLE_COMMENT_ONLY"
+        ],
+        "explanation": "Analyzed 1 comment with status [SUPPORTED]. Community support detected: 1 comments corroborate the post.",
+        "metrics": {
+          "comment_count": 1,
+          "duplicate_ratio": 0.0,
+          "exact_duplicate_ratio": 0.0,
+          "near_duplicate_ratio": 0.0,
+          "average_similarity": 0.0,
+          "cluster_count": 1,
+          "largest_cluster_size": 1,
+          "emoji_ratio": 0.0,
+          "emoji_entropy": 0.0,
+          "excessive_emoji_ratio": 0.0,
+          "temporal_anomaly_score": 0.0,
+          "temporal_burst_score": 0.0,
+          "average_comments_per_minute": 0.0,
+          "max_comments_per_minute": 0.0,
+          "zscore_max": 0.0,
+          "z_score": 0.0,
+          "debunk_ratio": 0.0,
+          "support_ratio": 1.0
+        },
+        "fact_check": {
+          "verdict": "SUPPORTED_BY_COMMENTS",
+          "debunk_ratio": 0.0,
+          "support_ratio": 1.0,
+          "debunk_count": 0,
+          "support_count": 1,
+          "has_fact_checker_reference": false,
+          "debunking_comments": [],
+          "extracted_comment_claims": [],
+          "summary": "Comments generally confirm or corroborate this post (1 of 1 supportive)."
+        }
+      },
+      "module_2": {
+        "score": 50.0,
+        "status": "PARTIAL",
+        "evidence_state": "NO_FACT_CHECK_FOUND",
+        "claims": [
+          "Local laboratory team claims discovery of room-temperature superconductor in preliminary benchtop sample"
+        ],
+        "fact_checks": [],
+        "verified_count": 0,
+        "false_count": 0,
+        "unverified_count": 1,
+        "source_quality": 0.0,
+        "sources": [],
+        "flags": [
+          "UNINDEXED_CLAIM"
+        ],
+        "explanation": "No matching fact-check found in Google Fact Check index for 'Local laboratory team claims discovery of room-temperature superconductor in preliminary benchtop sample'. Assigned neutral baseline score (50/100). Absence of fact-checks does not verify or disprove content."
+      },
+      "module_3": {
+        "score": 84.1,
+        "status": "COMPLETED",
+        "anomaly_score": 0.4884,
+        "is_anomalous": false,
+        "metrics": {
+          "account_age_days": 450.0,
+          "followers": 0.0,
+          "following": 0.0,
+          "follower_following_ratio": 0.0,
+          "posts_per_day": 2.0,
+          "comments_per_day": 3.0,
+          "average_posting_interval_seconds": 43200.0,
+          "engagement_rate": 0.03,
+          "duplicate_content_ratio": 0.05,
+          "hashtag_repetition_rate": 0.06,
+          "posts_per_day_zscore": -0.17,
+          "posts_per_day_iqr_outlier": 0.0,
+          "comments_per_day_zscore": -0.2,
+          "comments_per_day_iqr_outlier": 0.0,
+          "follower_following_ratio_zscore": -0.6,
+          "follower_following_ratio_iqr_outlier": 0.0,
+          "duplicate_content_ratio_zscore": 0.0,
+          "duplicate_content_ratio_iqr_outlier": 0.0,
+          "hashtag_repetition_rate_zscore": -0.4,
+          "hashtag_repetition_rate_iqr_outlier": 0.0,
+          "average_posting_interval_seconds_zscore": 0.72,
+          "average_posting_interval_seconds_iqr_outlier": 0.0,
+          "account_age_days_zscore": -0.3,
+          "account_age_days_iqr_outlier": 0.0,
+          "raw_isolation_forest_score": 0.0058,
+          "is_anomalous": false
+        },
+        "flags": [],
+        "explanation": "Account 'curious_physicist' exhibits mature, balanced engagement patterns with normal posting velocity (2.0 posts/day) and longevity (450 days)."
+      },
+      "module_4": {
+        "score": 85.0,
+        "status": "COMPLETED",
+        "recycled_content": false,
+        "visual_similarity": 0.0,
+        "semantic_similarity": 0.1387,
+        "keyword_similarity": 0.0,
+        "matches": [
+          {
+            "item_id": "hist_001",
+            "text": "NASA rovers detect liquid water beneath Martian polar ice caps in deep radar soundings.",
+            "visual_similarity": 0.0,
+            "semantic_similarity": 0.1387,
+            "keyword_similarity": 0.0,
+            "historical_age_days": 1967.2,
+            "first_seen_timestamp": "2021-05-20T12:00:00+00:00",
+            "is_known_debunked": false,
+            "source_context": "Verified 2021 scientific radar research announcement"
+          },
+          {
+            "item_id": "hist_003",
+            "text": "Free crypto airdrop giveaway! Send 0.1 ETH to verify your wallet and receive 2.0 ETH immediately.",
+            "visual_similarity": 0.0,
+            "semantic_similarity": 0.1003,
+            "keyword_similarity": 0.0,
+            "historical_age_days": 1732.7,
+            "first_seen_timestamp": "2022-01-10T00:00:00+00:00",
+            "is_known_debunked": true,
+            "source_context": "Recycled cryptocurrency doubling scam template"
+          },
+          {
+            "item_id": "hist_002",
+            "text": "BREAKING: Governments announce emergency lockdown protocols across all international airports due to mystery virus!",
+            "visual_similarity": 0.0,
+            "semantic_similarity": 0.0,
+            "keyword_similarity": 0.0,
+            "historical_age_days": 2398.4,
+            "first_seen_timestamp": "2020-03-15T08:30:00+00:00",
+            "is_known_debunked": true,
+            "source_context": "Debunked 2020 recycled viral hoax"
+          }
+        ],
+        "flags": [
+          "LIMITED_LOCAL_CORPUS_EVALUATED"
+        ],
+        "explanation": "Content demonstrates high originality; no matching recycled narrative found in current 3-item local historical corpus (max semantic similarity: 0.14, visual similarity: 0.00, keyword overlap: 0.00).",
+        "earliest_matching_timestamp": null,
+        "corpus_size": 3
+      },
+      "module_5": {
+        "final_score": 69.87,
+        "score": 69.87,
+        "status": "COMPLETED",
+        "classification": "PROBABLY REAL",
+        "confidence_level": "HIGH",
+        "confidence_interval": [
+          66.37,
+          73.37
+        ],
+        "formula_applied": "0.20*M1 + 0.40*M2 + 0.15*M3 + 0.25*M4",
+        "weights_applied": {
+          "comment_score": 0.2,
+          "evidence_score": 0.4,
+          "behaviour_score": 0.15,
+          "similarity_score": 0.25
+        },
+        "module_scores": {
+          "comment_analysis": 80.0,
+          "evidence_verification": 50.0,
+          "user_behaviour": 84.1,
+          "similar_content": 85.0
+        },
+        "weighted_contributions": {
+          "comment_analysis": 16.0,
+          "evidence_verification": 20.0,
+          "user_behaviour": 12.615,
+          "similar_content": 21.25,
+          "M1": 16.0,
+          "M2": 20.0,
+          "M3": 12.615,
+          "M4": 21.25
+        },
+        "flags": [],
+        "summary_explanation": "Final Credibility Score is 69.9/100 (PROBABLY REAL). Evidence Verification contributed 20.0 pts (weight 40%), Similar Content contributed 21.2 pts (weight 25%), Comment Analysis contributed 16.0 pts (weight 20%), and User Behaviour contributed 12.6 pts (weight 15%)."
+      },
+      "xai_explanation": {
+        "summary": "Social Guard evaluates this content as PROBABLY REAL (Credibility Score: 69.9/100). Module contributions: Evidence 20.0 pts (40%), Similar Content 21.2 pts (25%), Comment Analysis 16.0 pts (20%), User Behaviour 12.6 pts (15%). Key strength: No matching item found in current 3-item local historical corpus (no recycled hoax detected). No matching indexed fact-check was found on Google Fact Check Tools; evidence module remained neutral.",
+        "explanation_summary": "Social Guard evaluates this content as PROBABLY REAL (Credibility Score: 69.9/100). Module contributions: Evidence 20.0 pts (40%), Similar Content 21.2 pts (25%), Comment Analysis 16.0 pts (20%), User Behaviour 12.6 pts (15%). Key strength: No matching item found in current 3-item local historical corpus (no recycled hoax detected). No matching indexed fact-check was found on Google Fact Check Tools; evidence module remained neutral.",
+        "positive_factors": [
+          {
+            "factor": "No matching item found in current 3-item local historical corpus (no recycled hoax detected).",
+            "module": "similar_content",
+            "impact_weight": 0.2,
+            "similarity_score": 85.0
+          },
+          {
+            "factor": "Community Corroboration: Extracted comments corroborate and affirm the content.",
+            "module": "comment_analysis",
+            "impact_weight": 0.15,
+            "support_ratio": 1.0
+          },
+          {
+            "factor": "Author account demonstrates mature longevity (450 days) and balanced activity.",
+            "module": "user_behaviour",
+            "impact_weight": 0.15,
+            "behaviour_score": 84.1
+          }
+        ],
+        "negative_factors": [],
+        "module_explanations": {
+          "evidence_verification": "No existing fact-check was found on Google Fact Check Tools; evidence module remained neutral (50/100).",
+          "similar_content": "No matching item found in current 3-item local historical corpus (no recycled hoax detected).",
+          "comment_analysis": "1 comment(s) extracted; sample size too small for statistical coordination analysis.",
+          "user_behaviour": "Author account demonstrates mature longevity (450 days) and balanced activity."
+        },
+        "confidence_notes": [
+          "Absence of indexed fact-checks does not verify or disprove the post.",
+          "Text displays human-written stylistic distribution (Statistical AI indicator: 7.6%). Note: Human-authored text does not guarantee factual accuracy."
+        ]
+      },
+      "processing_timings": {
+        "module_1_comments_ms": 0.12,
+        "module_2_evidence_ms": 773.0,
+        "module_3_behaviour_ms": 15.61,
+        "module_4_similarity_ms": 21.06,
+        "module_5_fusion_ms": 0.07,
+        "ai_detection_ms": 0.17,
+        "explainability_ms": 0.04,
+        "total_pipeline_ms": 810.76
+      },
+      "warnings": [
+        "No post timestamp provided; temporal age delta calculated from current time.",
+        "No definitive fact-checks indexed for post claim; evaluated at neutral baseline."
+      ],
+      "errors": [],
+      "module_results": {
+        "timings_ms": {
+          "comment_analysis_ms": 0.12,
+          "evidence_verification_ms": 773.0,
+          "user_behaviour_ms": 15.61,
+          "similar_content_ms": 21.06,
+          "score_fusion_ms": 0.07,
+          "ai_detection_ms": 0.17,
+          "explainability_ms": 0.04,
+          "total_pipeline_ms": 810.76
+        },
+        "module_breakdowns": {
+          "comments": {
+            "score": 80.0,
+            "status": "PARTIAL",
+            "comment_count": 1,
+            "duplicate_ratio": 0.0,
+            "semantic_similarity": 0.0,
+            "clusters": [],
+            "temporal_burst_score": 0.0,
+            "z_score": 0.0,
+            "iqr_outliers": [],
+            "emoji_entropy": 0.0,
+            "debunk_ratio": 0.0,
+            "support_ratio": 1.0,
+            "flags": [
+              "COMMENTS_VERIFY_CLAIM",
+              "SINGLE_COMMENT_ONLY"
+            ],
+            "explanation": "Analyzed 1 comment with status [SUPPORTED]. Community support detected: 1 comments corroborate the post.",
+            "metrics": {
+              "comment_count": 1,
+              "duplicate_ratio": 0.0,
+              "exact_duplicate_ratio": 0.0,
+              "near_duplicate_ratio": 0.0,
+              "average_similarity": 0.0,
+              "cluster_count": 1,
+              "largest_cluster_size": 1,
+              "emoji_ratio": 0.0,
+              "emoji_entropy": 0.0,
+              "excessive_emoji_ratio": 0.0,
+              "temporal_anomaly_score": 0.0,
+              "temporal_burst_score": 0.0,
+              "average_comments_per_minute": 0.0,
+              "max_comments_per_minute": 0.0,
+              "zscore_max": 0.0,
+              "z_score": 0.0,
+              "debunk_ratio": 0.0,
+              "support_ratio": 1.0
+            },
+            "fact_check": {
+              "verdict": "SUPPORTED_BY_COMMENTS",
+              "debunk_ratio": 0.0,
+              "support_ratio": 1.0,
+              "debunk_count": 0,
+              "support_count": 1,
+              "has_fact_checker_reference": false,
+              "debunking_comments": [],
+              "extracted_comment_claims": [],
+              "summary": "Comments generally confirm or corroborate this post (1 of 1 supportive)."
+            }
+          },
+          "evidence": {
+            "score": 50.0,
+            "status": "PARTIAL",
+            "evidence_state": "NO_FACT_CHECK_FOUND",
+            "claims": [
+              "Local laboratory team claims discovery of room-temperature superconductor in preliminary benchtop sample"
+            ],
+            "fact_checks": [],
+            "verified_count": 0,
+            "false_count": 0,
+            "unverified_count": 1,
+            "source_quality": 0.0,
+            "sources": [],
+            "flags": [
+              "UNINDEXED_CLAIM"
+            ],
+            "explanation": "No matching fact-check found in Google Fact Check index for 'Local laboratory team claims discovery of room-temperature superconductor in preliminary benchtop sample'. Assigned neutral baseline score (50/100). Absence of fact-checks does not verify or disprove content."
+          },
+          "user_behaviour": {
+            "score": 84.1,
+            "status": "COMPLETED",
+            "anomaly_score": 0.4884,
+            "is_anomalous": false,
+            "metrics": {
+              "account_age_days": 450.0,
+              "followers": 0.0,
+              "following": 0.0,
+              "follower_following_ratio": 0.0,
+              "posts_per_day": 2.0,
+              "comments_per_day": 3.0,
+              "average_posting_interval_seconds": 43200.0,
+              "engagement_rate": 0.03,
+              "duplicate_content_ratio": 0.05,
+              "hashtag_repetition_rate": 0.06,
+              "posts_per_day_zscore": -0.17,
+              "posts_per_day_iqr_outlier": 0.0,
+              "comments_per_day_zscore": -0.2,
+              "comments_per_day_iqr_outlier": 0.0,
+              "follower_following_ratio_zscore": -0.6,
+              "follower_following_ratio_iqr_outlier": 0.0,
+              "duplicate_content_ratio_zscore": 0.0,
+              "duplicate_content_ratio_iqr_outlier": 0.0,
+              "hashtag_repetition_rate_zscore": -0.4,
+              "hashtag_repetition_rate_iqr_outlier": 0.0,
+              "average_posting_interval_seconds_zscore": 0.72,
+              "average_posting_interval_seconds_iqr_outlier": 0.0,
+              "account_age_days_zscore": -0.3,
+              "account_age_days_iqr_outlier": 0.0,
+              "raw_isolation_forest_score": 0.0058,
+              "is_anomalous": false
+            },
+            "flags": [],
+            "explanation": "Account 'curious_physicist' exhibits mature, balanced engagement patterns with normal posting velocity (2.0 posts/day) and longevity (450 days)."
+          },
+          "similarity": {
+            "score": 85.0,
+            "status": "COMPLETED",
+            "recycled_content": false,
+            "visual_similarity": 0.0,
+            "semantic_similarity": 0.1387,
+            "keyword_similarity": 0.0,
+            "matches": [
+              {
+                "item_id": "hist_001",
+                "text": "NASA rovers detect liquid water beneath Martian polar ice caps in deep radar soundings.",
+                "visual_similarity": 0.0,
+                "semantic_similarity": 0.1387,
+                "keyword_similarity": 0.0,
+                "historical_age_days": 1967.2,
+                "first_seen_timestamp": "2021-05-20T12:00:00+00:00",
+                "is_known_debunked": false,
+                "source_context": "Verified 2021 scientific radar research announcement"
+              },
+              {
+                "item_id": "hist_003",
+                "text": "Free crypto airdrop giveaway! Send 0.1 ETH to verify your wallet and receive 2.0 ETH immediately.",
+                "visual_similarity": 0.0,
+                "semantic_similarity": 0.1003,
+                "keyword_similarity": 0.0,
+                "historical_age_days": 1732.7,
+                "first_seen_timestamp": "2022-01-10T00:00:00+00:00",
+                "is_known_debunked": true,
+                "source_context": "Recycled cryptocurrency doubling scam template"
+              },
+              {
+                "item_id": "hist_002",
+                "text": "BREAKING: Governments announce emergency lockdown protocols across all international airports due to mystery virus!",
+                "visual_similarity": 0.0,
+                "semantic_similarity": 0.0,
+                "keyword_similarity": 0.0,
+                "historical_age_days": 2398.4,
+                "first_seen_timestamp": "2020-03-15T08:30:00+00:00",
+                "is_known_debunked": true,
+                "source_context": "Debunked 2020 recycled viral hoax"
+              }
+            ],
+            "flags": [
+              "LIMITED_LOCAL_CORPUS_EVALUATED"
+            ],
+            "explanation": "Content demonstrates high originality; no matching recycled narrative found in current 3-item local historical corpus (max semantic similarity: 0.14, visual similarity: 0.00, keyword overlap: 0.00).",
+            "earliest_matching_timestamp": null,
+            "corpus_size": 3
+          },
+          "fusion": {
+            "final_score": 69.87,
+            "score": 69.87,
+            "status": "COMPLETED",
+            "classification": "PROBABLY REAL",
+            "confidence_level": "HIGH",
+            "confidence_interval": [
+              66.37,
+              73.37
+            ],
+            "formula_applied": "0.20*M1 + 0.40*M2 + 0.15*M3 + 0.25*M4",
+            "weights_applied": {
+              "comment_score": 0.2,
+              "evidence_score": 0.4,
+              "behaviour_score": 0.15,
+              "similarity_score": 0.25
+            },
+            "module_scores": {
+              "comment_analysis": 80.0,
+              "evidence_verification": 50.0,
+              "user_behaviour": 84.1,
+              "similar_content": 85.0
+            },
+            "weighted_contributions": {
+              "comment_analysis": 16.0,
+              "evidence_verification": 20.0,
+              "user_behaviour": 12.615,
+              "similar_content": 21.25,
+              "M1": 16.0,
+              "M2": 20.0,
+              "M3": 12.615,
+              "M4": 21.25
+            },
+            "flags": [],
+            "summary_explanation": "Final Credibility Score is 69.9/100 (PROBABLY REAL). Evidence Verification contributed 20.0 pts (weight 40%), Similar Content contributed 21.2 pts (weight 25%), Comment Analysis contributed 16.0 pts (weight 20%), and User Behaviour contributed 12.6 pts (weight 15%)."
+          }
+        },
+        "explainability": {
+          "summary": "Social Guard evaluates this content as PROBABLY REAL (Credibility Score: 69.9/100). Module contributions: Evidence 20.0 pts (40%), Similar Content 21.2 pts (25%), Comment Analysis 16.0 pts (20%), User Behaviour 12.6 pts (15%). Key strength: No matching item found in current 3-item local historical corpus (no recycled hoax detected). No matching indexed fact-check was found on Google Fact Check Tools; evidence module remained neutral.",
+          "explanation_summary": "Social Guard evaluates this content as PROBABLY REAL (Credibility Score: 69.9/100). Module contributions: Evidence 20.0 pts (40%), Similar Content 21.2 pts (25%), Comment Analysis 16.0 pts (20%), User Behaviour 12.6 pts (15%). Key strength: No matching item found in current 3-item local historical corpus (no recycled hoax detected). No matching indexed fact-check was found on Google Fact Check Tools; evidence module remained neutral.",
+          "positive_factors": [
+            {
+              "factor": "No matching item found in current 3-item local historical corpus (no recycled hoax detected).",
+              "module": "similar_content",
+              "impact_weight": 0.2,
+              "similarity_score": 85.0
+            },
+            {
+              "factor": "Community Corroboration: Extracted comments corroborate and affirm the content.",
+              "module": "comment_analysis",
+              "impact_weight": 0.15,
+              "support_ratio": 1.0
+            },
+            {
+              "factor": "Author account demonstrates mature longevity (450 days) and balanced activity.",
+              "module": "user_behaviour",
+              "impact_weight": 0.15,
+              "behaviour_score": 84.1
+            }
+          ],
+          "negative_factors": [],
+          "module_explanations": {
+            "evidence_verification": "No existing fact-check was found on Google Fact Check Tools; evidence module remained neutral (50/100).",
+            "similar_content": "No matching item found in current 3-item local historical corpus (no recycled hoax detected).",
+            "comment_analysis": "1 comment(s) extracted; sample size too small for statistical coordination analysis.",
+            "user_behaviour": "Author account demonstrates mature longevity (450 days) and balanced activity."
+          },
+          "confidence_notes": [
+            "Absence of indexed fact-checks does not verify or disprove the post.",
+            "Text displays human-written stylistic distribution (Statistical AI indicator: 7.6%). Note: Human-authored text does not guarantee factual accuracy."
+          ]
+        },
+        "ai_detection": {
+          "text_ai_detection": {
+            "ai_generation_probability": 7.61,
+            "confidence": "MEDIUM",
+            "model_used": "PerplexityTextAIDetector (Lexical Diversity & Uniformity Entropy)",
+            "metrics": {
+              "type_token_ratio": 1.0,
+              "length_std": 4.24,
+              "word_count": 12
+            },
+            "status": "ANALYZED"
+          }
+        },
+        "flags": [
+          "NO_MEDIA_ATTACHED",
+          "LIMITED_LOCAL_CORPUS_EVALUATED",
+          "UNINDEXED_CLAIM",
+          "NO_POST_TIMESTAMP",
+          "SINGLE_COMMENT_ONLY",
+          "COMMENTS_VERIFY_CLAIM"
+        ],
+        "warnings": [
+          "No post timestamp provided; temporal age delta calculated from current time.",
+          "No definitive fact-checks indexed for post claim; evaluated at neutral baseline."
+        ],
+        "errors": []
+      },
+      "created_at": "2026-10-08T17:29:20.498306Z"
+    },
+    "math_match": true
+  },
+  "TEST 3 \u2014 LIKELY FAKE": {
+    "data": {
+      "request_id": "test_e2e_3_fake",
+      "consolidated_score": 33.2,
+      "classification": "PROBABLY FAKE",
+      "ai_generation_probability": 0.2018,
+      "explanation": "Social Guard evaluates this content as PROBABLY FAKE (Credibility Score: 33.2/100). Module contributions: Evidence 20.0 pts (40%), Similar Content 0.0 pts (25%), Comment Analysis 5.0 pts (20%), User Behaviour 8.2 pts (15%). Key risk: Content matched a known debunked historical viral narrative in local corpus from 2020-03-15. No matching indexed fact-check was found on Google Fact Check Tools; evidence module remained neutral.",
+      "module_scores": {
+        "comment_analysis": 25.0,
+        "evidence_verification": 50.0,
+        "user_behaviour": 54.65,
+        "similar_content": 0.0
+      },
+      "request_info": {
+        "request_id": "test_e2e_3_fake",
+        "received_at": "2026-10-08T17:29:24.417649+00:00",
+        "has_custom_weights": false
+      },
+      "post_info": {
+        "platform": "facebook",
+        "post_id": null,
+        "text": "BREAKING: Emergency nationwide lockdown declared tonight across all major international airports due to unknown airborne pathogen outbreak! Stock up immediately!",
+        "text_length": 161,
+        "timestamp": null,
+        "hashtags": [
+          "#BreakingNews",
+          "#Lockdown",
+          "#Emergency"
+        ],
+        "media_count": 0,
+        "media_urls": [],
+        "comments_count": 3,
+        "has_author_metadata": true,
+        "author_username": "viral_alerts_bot"
+      },
+      "module_1": {
+        "score": 25.0,
+        "status": "COMPLETED",
+        "comment_count": 3,
+        "duplicate_ratio": 0.0,
+        "semantic_similarity": 0.3126,
+        "clusters": [],
+        "temporal_burst_score": 0.0,
+        "z_score": 0.0,
+        "iqr_outliers": [],
+        "emoji_entropy": 0.0,
+        "debunk_ratio": 1.0,
+        "support_ratio": 0.0,
+        "flags": [
+          "COMMENTS_DEBUNK_CLAIM"
+        ],
+        "explanation": "Analyzed 3 comments with status [DEBUNKED]. Community debunking detected: 3 comments refute the claim.",
+        "metrics": {
+          "comment_count": 3,
+          "duplicate_ratio": 0.0,
+          "exact_duplicate_ratio": 0.0,
+          "near_duplicate_ratio": 0.0,
+          "average_similarity": 0.3126,
+          "cluster_count": 3,
+          "largest_cluster_size": 1,
+          "emoji_ratio": 0.0,
+          "emoji_entropy": 0.0,
+          "excessive_emoji_ratio": 0.0,
+          "temporal_anomaly_score": 0.0,
+          "temporal_burst_score": 0.0,
+          "average_comments_per_minute": 0.0,
+          "max_comments_per_minute": 0.0,
+          "zscore_max": 0.0,
+          "z_score": 0.0,
+          "debunk_ratio": 1.0,
+          "support_ratio": 0.0
+        },
+        "fact_check": {
+          "verdict": "DEBUNKED_BY_COMMUNITY",
+          "debunk_ratio": 1.0,
+          "support_ratio": 0.0,
+          "debunk_count": 3,
+          "support_count": 0,
+          "has_fact_checker_reference": false,
+          "debunking_comments": [
+            "This is completely fake news and an old 2020 rumor! Stop lying.",
+            "False alarm, airport authorities already debunked this hoax years ago.",
+            "Old recycled scam reposted from years ago. Reported as misinformation."
+          ],
+          "extracted_comment_claims": [
+            "This is completely fake news and an old 2020 rumor! Stop lying.",
+            "False alarm, airport authorities already debunked this hoax years ago.",
+            "Old recycled scam reposted from years ago. Reported as misinformation."
+          ],
+          "summary": "Strong community debunking detected: 3 of 3 comments refute this claim as false, fake, or a hoax."
+        }
+      },
+      "module_2": {
+        "score": 50.0,
+        "status": "PARTIAL",
+        "evidence_state": "NO_FACT_CHECK_FOUND",
+        "claims": [
+          "Emergency nationwide lockdown declared tonight across all major international airports due to unknown airborne pathogen outbreak"
+        ],
+        "fact_checks": [],
+        "verified_count": 0,
+        "false_count": 0,
+        "unverified_count": 1,
+        "source_quality": 0.0,
+        "sources": [],
+        "flags": [
+          "UNINDEXED_CLAIM"
+        ],
+        "explanation": "No matching fact-check found in Google Fact Check index for 'Emergency nationwide lockdown declared tonight across all major international airports due to unknown airborne pathogen outbreak'. Assigned neutral baseline score (50/100). Absence of fact-checks does not verify or disprove content."
+      },
+      "module_3": {
+        "score": 54.65,
+        "status": "COMPLETED",
+        "anomaly_score": 0.7144,
+        "is_anomalous": true,
+        "metrics": {
+          "account_age_days": 3.0,
+          "followers": 0.0,
+          "following": 0.0,
+          "follower_following_ratio": 0.0,
+          "posts_per_day": 2.0,
+          "comments_per_day": 3.0,
+          "average_posting_interval_seconds": 43200.0,
+          "engagement_rate": 0.03,
+          "duplicate_content_ratio": 0.05,
+          "hashtag_repetition_rate": 0.95,
+          "posts_per_day_zscore": -0.17,
+          "posts_per_day_iqr_outlier": 0.0,
+          "comments_per_day_zscore": -0.2,
+          "comments_per_day_iqr_outlier": 0.0,
+          "follower_following_ratio_zscore": -0.6,
+          "follower_following_ratio_iqr_outlier": 0.0,
+          "duplicate_content_ratio_zscore": 0.0,
+          "duplicate_content_ratio_iqr_outlier": 0.0,
+          "hashtag_repetition_rate_zscore": 5.53,
+          "hashtag_repetition_rate_iqr_outlier": 1.0,
+          "average_posting_interval_seconds_zscore": 0.72,
+          "average_posting_interval_seconds_iqr_outlier": 0.0,
+          "account_age_days_zscore": -1.19,
+          "account_age_days_iqr_outlier": 0.0,
+          "raw_isolation_forest_score": -0.1072,
+          "is_anomalous": true
+        },
+        "flags": [
+          "EXCESSIVE_HASHTAG_REPETITION",
+          "ANOMALOUS_BEHAVIOURAL_PATTERN"
+        ],
+        "explanation": "Account 'viral_alerts_bot' shows moderate behavioral variances (2.0 posts/day). Note: High activity or new accounts do not inherently indicate inauthenticity. Behavioral anomaly does not prove post is fake."
+      },
+      "module_4": {
+        "score": 0.0,
+        "status": "COMPLETED",
+        "recycled_content": true,
+        "visual_similarity": 0.0,
+        "semantic_similarity": 0.7785,
+        "keyword_similarity": 0.4,
+        "matches": [
+          {
+            "item_id": "hist_002",
+            "text": "BREAKING: Governments announce emergency lockdown protocols across all international airports due to mystery virus!",
+            "visual_similarity": 0.0,
+            "semantic_similarity": 0.7785,
+            "keyword_similarity": 0.4,
+            "historical_age_days": 2398.4,
+            "first_seen_timestamp": "2020-03-15T08:30:00+00:00",
+            "is_known_debunked": true,
+            "source_context": "Debunked 2020 recycled viral hoax"
+          },
+          {
+            "item_id": "hist_003",
+            "text": "Free crypto airdrop giveaway! Send 0.1 ETH to verify your wallet and receive 2.0 ETH immediately.",
+            "visual_similarity": 0.0,
+            "semantic_similarity": 0.2539,
+            "keyword_similarity": 0.0,
+            "historical_age_days": 1732.7,
+            "first_seen_timestamp": "2022-01-10T00:00:00+00:00",
+            "is_known_debunked": true,
+            "source_context": "Recycled cryptocurrency doubling scam template"
+          },
+          {
+            "item_id": "hist_001",
+            "text": "NASA rovers detect liquid water beneath Martian polar ice caps in deep radar soundings.",
+            "visual_similarity": 0.0,
+            "semantic_similarity": 0.0259,
+            "keyword_similarity": 0.0,
+            "historical_age_days": 1967.2,
+            "first_seen_timestamp": "2021-05-20T12:00:00+00:00",
+            "is_known_debunked": false,
+            "source_context": "Verified 2021 scientific radar research announcement"
+          }
+        ],
+        "flags": [
+          "LIMITED_LOCAL_CORPUS_EVALUATED",
+          "RECYCLED_HISTORICAL_CONTENT_DETECTED",
+          "MATCHES_KNOWN_DEBUNKED_VIRAL_NARRATIVE",
+          "SENSATIONAL_VIRAL_FORMATTING"
+        ],
+        "explanation": "Content matches archived material in local reference corpus (semantic similarity: 0.78, visual: 0.00) first seen 2398 days ago (2020-03-15). Note: Recycled content does not automatically prove malicious intent.",
+        "earliest_matching_timestamp": "2020-03-15T08:30:00+00:00",
+        "corpus_size": 3
+      },
+      "module_5": {
+        "final_score": 33.2,
+        "score": 33.2,
+        "status": "COMPLETED",
+        "classification": "PROBABLY FAKE",
+        "confidence_level": "MEDIUM",
+        "confidence_interval": [
+          27.2,
+          39.2
+        ],
+        "formula_applied": "0.20*M1 + 0.40*M2 + 0.15*M3 + 0.25*M4",
+        "weights_applied": {
+          "comment_score": 0.2,
+          "evidence_score": 0.4,
+          "behaviour_score": 0.15,
+          "similarity_score": 0.25
+        },
+        "module_scores": {
+          "comment_analysis": 25.0,
+          "evidence_verification": 50.0,
+          "user_behaviour": 54.65,
+          "similar_content": 0.0
+        },
+        "weighted_contributions": {
+          "comment_analysis": 5.0,
+          "evidence_verification": 20.0,
+          "user_behaviour": 8.197,
+          "similar_content": 0.0,
+          "M1": 5.0,
+          "M2": 20.0,
+          "M3": 8.197,
+          "M4": 0.0
+        },
+        "flags": [],
+        "summary_explanation": "Final Credibility Score is 33.2/100 (PROBABLY FAKE). Evidence Verification contributed 20.0 pts (weight 40%), Similar Content contributed 0.0 pts (weight 25%), Comment Analysis contributed 5.0 pts (weight 20%), and User Behaviour contributed 8.2 pts (weight 15%)."
+      },
+      "xai_explanation": {
+        "summary": "Social Guard evaluates this content as PROBABLY FAKE (Credibility Score: 33.2/100). Module contributions: Evidence 20.0 pts (40%), Similar Content 0.0 pts (25%), Comment Analysis 5.0 pts (20%), User Behaviour 8.2 pts (15%). Key risk: Content matched a known debunked historical viral narrative in local corpus from 2020-03-15. No matching indexed fact-check was found on Google Fact Check Tools; evidence module remained neutral.",
+        "explanation_summary": "Social Guard evaluates this content as PROBABLY FAKE (Credibility Score: 33.2/100). Module contributions: Evidence 20.0 pts (40%), Similar Content 0.0 pts (25%), Comment Analysis 5.0 pts (20%), User Behaviour 8.2 pts (15%). Key risk: Content matched a known debunked historical viral narrative in local corpus from 2020-03-15. No matching indexed fact-check was found on Google Fact Check Tools; evidence module remained neutral.",
+        "positive_factors": [],
+        "negative_factors": [
+          {
+            "factor": "Content matched a known debunked historical viral narrative in local corpus from 2020-03-15.",
+            "module": "similar_content",
+            "impact_weight": 0.25,
+            "similarity_score": 0.0
+          },
+          {
+            "factor": "Crowdsourced Community Debunking: Comments strongly refute this post (3 comments identify it as false, fake, or a hoax).",
+            "module": "comment_analysis",
+            "impact_weight": 0.25,
+            "debunk_ratio": 1.0
+          },
+          {
+            "factor": "Author activity contains anomalous behavioural patterns (e.g. unusual posting velocity or timeline repetition).",
+            "module": "user_behaviour",
+            "impact_weight": 0.15,
+            "anomaly_score": 0.7144
+          }
+        ],
+        "module_explanations": {
+          "evidence_verification": "No existing fact-check was found on Google Fact Check Tools; evidence module remained neutral (50/100).",
+          "similar_content": "Similar content was found from an earlier timestamp from 2020-03-15, indicating recycled material.",
+          "comment_analysis": "Crowdsourced Community Debunking: Comments strongly refute this post (3 comments identify it as false, fake, or a hoax).",
+          "user_behaviour": "Author activity contains anomalous behavioural patterns (e.g. unusual posting velocity or timeline repetition)."
+        },
+        "confidence_notes": [
+          "Absence of indexed fact-checks does not verify or disprove the post.",
+          "Behavioral anomaly detected in author profile indicates suspicious account activity, but does not alone prove content falsity.",
+          "Text displays human-written stylistic distribution (Statistical AI indicator: 20.2%). Note: Human-authored text does not guarantee factual accuracy."
+        ]
+      },
+      "processing_timings": {
+        "module_1_comments_ms": 31.29,
+        "module_2_evidence_ms": 3852.67,
+        "module_3_behaviour_ms": 15.66,
+        "module_4_similarity_ms": 13.27,
+        "module_5_fusion_ms": 0.05,
+        "ai_detection_ms": 0.09,
+        "explainability_ms": 0.03,
+        "total_pipeline_ms": 3913.91
+      },
+      "warnings": [
+        "No post timestamp provided; temporal age delta calculated from current time.",
+        "No definitive fact-checks indexed for post claim; evaluated at neutral baseline."
+      ],
+      "errors": [],
+      "module_results": {
+        "timings_ms": {
+          "comment_analysis_ms": 31.29,
+          "evidence_verification_ms": 3852.67,
+          "user_behaviour_ms": 15.66,
+          "similar_content_ms": 13.27,
+          "score_fusion_ms": 0.05,
+          "ai_detection_ms": 0.09,
+          "explainability_ms": 0.03,
+          "total_pipeline_ms": 3913.91
+        },
+        "module_breakdowns": {
+          "comments": {
+            "score": 25.0,
+            "status": "COMPLETED",
+            "comment_count": 3,
+            "duplicate_ratio": 0.0,
+            "semantic_similarity": 0.3126,
+            "clusters": [],
+            "temporal_burst_score": 0.0,
+            "z_score": 0.0,
+            "iqr_outliers": [],
+            "emoji_entropy": 0.0,
+            "debunk_ratio": 1.0,
+            "support_ratio": 0.0,
+            "flags": [
+              "COMMENTS_DEBUNK_CLAIM"
+            ],
+            "explanation": "Analyzed 3 comments with status [DEBUNKED]. Community debunking detected: 3 comments refute the claim.",
+            "metrics": {
+              "comment_count": 3,
+              "duplicate_ratio": 0.0,
+              "exact_duplicate_ratio": 0.0,
+              "near_duplicate_ratio": 0.0,
+              "average_similarity": 0.3126,
+              "cluster_count": 3,
+              "largest_cluster_size": 1,
+              "emoji_ratio": 0.0,
+              "emoji_entropy": 0.0,
+              "excessive_emoji_ratio": 0.0,
+              "temporal_anomaly_score": 0.0,
+              "temporal_burst_score": 0.0,
+              "average_comments_per_minute": 0.0,
+              "max_comments_per_minute": 0.0,
+              "zscore_max": 0.0,
+              "z_score": 0.0,
+              "debunk_ratio": 1.0,
+              "support_ratio": 0.0
+            },
+            "fact_check": {
+              "verdict": "DEBUNKED_BY_COMMUNITY",
+              "debunk_ratio": 1.0,
+              "support_ratio": 0.0,
+              "debunk_count": 3,
+              "support_count": 0,
+              "has_fact_checker_reference": false,
+              "debunking_comments": [
+                "This is completely fake news and an old 2020 rumor! Stop lying.",
+                "False alarm, airport authorities already debunked this hoax years ago.",
+                "Old recycled scam reposted from years ago. Reported as misinformation."
+              ],
+              "extracted_comment_claims": [
+                "This is completely fake news and an old 2020 rumor! Stop lying.",
+                "False alarm, airport authorities already debunked this hoax years ago.",
+                "Old recycled scam reposted from years ago. Reported as misinformation."
+              ],
+              "summary": "Strong community debunking detected: 3 of 3 comments refute this claim as false, fake, or a hoax."
+            }
+          },
+          "evidence": {
+            "score": 50.0,
+            "status": "PARTIAL",
+            "evidence_state": "NO_FACT_CHECK_FOUND",
+            "claims": [
+              "Emergency nationwide lockdown declared tonight across all major international airports due to unknown airborne pathogen outbreak"
+            ],
+            "fact_checks": [],
+            "verified_count": 0,
+            "false_count": 0,
+            "unverified_count": 1,
+            "source_quality": 0.0,
+            "sources": [],
+            "flags": [
+              "UNINDEXED_CLAIM"
+            ],
+            "explanation": "No matching fact-check found in Google Fact Check index for 'Emergency nationwide lockdown declared tonight across all major international airports due to unknown airborne pathogen outbreak'. Assigned neutral baseline score (50/100). Absence of fact-checks does not verify or disprove content."
+          },
+          "user_behaviour": {
+            "score": 54.65,
+            "status": "COMPLETED",
+            "anomaly_score": 0.7144,
+            "is_anomalous": true,
+            "metrics": {
+              "account_age_days": 3.0,
+              "followers": 0.0,
+              "following": 0.0,
+              "follower_following_ratio": 0.0,
+              "posts_per_day": 2.0,
+              "comments_per_day": 3.0,
+              "average_posting_interval_seconds": 43200.0,
+              "engagement_rate": 0.03,
+              "duplicate_content_ratio": 0.05,
+              "hashtag_repetition_rate": 0.95,
+              "posts_per_day_zscore": -0.17,
+              "posts_per_day_iqr_outlier": 0.0,
+              "comments_per_day_zscore": -0.2,
+              "comments_per_day_iqr_outlier": 0.0,
+              "follower_following_ratio_zscore": -0.6,
+              "follower_following_ratio_iqr_outlier": 0.0,
+              "duplicate_content_ratio_zscore": 0.0,
+              "duplicate_content_ratio_iqr_outlier": 0.0,
+              "hashtag_repetition_rate_zscore": 5.53,
+              "hashtag_repetition_rate_iqr_outlier": 1.0,
+              "average_posting_interval_seconds_zscore": 0.72,
+              "average_posting_interval_seconds_iqr_outlier": 0.0,
+              "account_age_days_zscore": -1.19,
+              "account_age_days_iqr_outlier": 0.0,
+              "raw_isolation_forest_score": -0.1072,
+              "is_anomalous": true
+            },
+            "flags": [
+              "EXCESSIVE_HASHTAG_REPETITION",
+              "ANOMALOUS_BEHAVIOURAL_PATTERN"
+            ],
+            "explanation": "Account 'viral_alerts_bot' shows moderate behavioral variances (2.0 posts/day). Note: High activity or new accounts do not inherently indicate inauthenticity. Behavioral anomaly does not prove post is fake."
+          },
+          "similarity": {
+            "score": 0.0,
+            "status": "COMPLETED",
+            "recycled_content": true,
+            "visual_similarity": 0.0,
+            "semantic_similarity": 0.7785,
+            "keyword_similarity": 0.4,
+            "matches": [
+              {
+                "item_id": "hist_002",
+                "text": "BREAKING: Governments announce emergency lockdown protocols across all international airports due to mystery virus!",
+                "visual_similarity": 0.0,
+                "semantic_similarity": 0.7785,
+                "keyword_similarity": 0.4,
+                "historical_age_days": 2398.4,
+                "first_seen_timestamp": "2020-03-15T08:30:00+00:00",
+                "is_known_debunked": true,
+                "source_context": "Debunked 2020 recycled viral hoax"
+              },
+              {
+                "item_id": "hist_003",
+                "text": "Free crypto airdrop giveaway! Send 0.1 ETH to verify your wallet and receive 2.0 ETH immediately.",
+                "visual_similarity": 0.0,
+                "semantic_similarity": 0.2539,
+                "keyword_similarity": 0.0,
+                "historical_age_days": 1732.7,
+                "first_seen_timestamp": "2022-01-10T00:00:00+00:00",
+                "is_known_debunked": true,
+                "source_context": "Recycled cryptocurrency doubling scam template"
+              },
+              {
+                "item_id": "hist_001",
+                "text": "NASA rovers detect liquid water beneath Martian polar ice caps in deep radar soundings.",
+                "visual_similarity": 0.0,
+                "semantic_similarity": 0.0259,
+                "keyword_similarity": 0.0,
+                "historical_age_days": 1967.2,
+                "first_seen_timestamp": "2021-05-20T12:00:00+00:00",
+                "is_known_debunked": false,
+                "source_context": "Verified 2021 scientific radar research announcement"
+              }
+            ],
+            "flags": [
+              "LIMITED_LOCAL_CORPUS_EVALUATED",
+              "RECYCLED_HISTORICAL_CONTENT_DETECTED",
+              "MATCHES_KNOWN_DEBUNKED_VIRAL_NARRATIVE",
+              "SENSATIONAL_VIRAL_FORMATTING"
+            ],
+            "explanation": "Content matches archived material in local reference corpus (semantic similarity: 0.78, visual: 0.00) first seen 2398 days ago (2020-03-15). Note: Recycled content does not automatically prove malicious intent.",
+            "earliest_matching_timestamp": "2020-03-15T08:30:00+00:00",
+            "corpus_size": 3
+          },
+          "fusion": {
+            "final_score": 33.2,
+            "score": 33.2,
+            "status": "COMPLETED",
+            "classification": "PROBABLY FAKE",
+            "confidence_level": "MEDIUM",
+            "confidence_interval": [
+              27.2,
+              39.2
+            ],
+            "formula_applied": "0.20*M1 + 0.40*M2 + 0.15*M3 + 0.25*M4",
+            "weights_applied": {
+              "comment_score": 0.2,
+              "evidence_score": 0.4,
+              "behaviour_score": 0.15,
+              "similarity_score": 0.25
+            },
+            "module_scores": {
+              "comment_analysis": 25.0,
+              "evidence_verification": 50.0,
+              "user_behaviour": 54.65,
+              "similar_content": 0.0
+            },
+            "weighted_contributions": {
+              "comment_analysis": 5.0,
+              "evidence_verification": 20.0,
+              "user_behaviour": 8.197,
+              "similar_content": 0.0,
+              "M1": 5.0,
+              "M2": 20.0,
+              "M3": 8.197,
+              "M4": 0.0
+            },
+            "flags": [],
+            "summary_explanation": "Final Credibility Score is 33.2/100 (PROBABLY FAKE). Evidence Verification contributed 20.0 pts (weight 40%), Similar Content contributed 0.0 pts (weight 25%), Comment Analysis contributed 5.0 pts (weight 20%), and User Behaviour contributed 8.2 pts (weight 15%)."
+          }
+        },
+        "explainability": {
+          "summary": "Social Guard evaluates this content as PROBABLY FAKE (Credibility Score: 33.2/100). Module contributions: Evidence 20.0 pts (40%), Similar Content 0.0 pts (25%), Comment Analysis 5.0 pts (20%), User Behaviour 8.2 pts (15%). Key risk: Content matched a known debunked historical viral narrative in local corpus from 2020-03-15. No matching indexed fact-check was found on Google Fact Check Tools; evidence module remained neutral.",
+          "explanation_summary": "Social Guard evaluates this content as PROBABLY FAKE (Credibility Score: 33.2/100). Module contributions: Evidence 20.0 pts (40%), Similar Content 0.0 pts (25%), Comment Analysis 5.0 pts (20%), User Behaviour 8.2 pts (15%). Key risk: Content matched a known debunked historical viral narrative in local corpus from 2020-03-15. No matching indexed fact-check was found on Google Fact Check Tools; evidence module remained neutral.",
+          "positive_factors": [],
+          "negative_factors": [
+            {
+              "factor": "Content matched a known debunked historical viral narrative in local corpus from 2020-03-15.",
+              "module": "similar_content",
+              "impact_weight": 0.25,
+              "similarity_score": 0.0
+            },
+            {
+              "factor": "Crowdsourced Community Debunking: Comments strongly refute this post (3 comments identify it as false, fake, or a hoax).",
+              "module": "comment_analysis",
+              "impact_weight": 0.25,
+              "debunk_ratio": 1.0
+            },
+            {
+              "factor": "Author activity contains anomalous behavioural patterns (e.g. unusual posting velocity or timeline repetition).",
+              "module": "user_behaviour",
+              "impact_weight": 0.15,
+              "anomaly_score": 0.7144
+            }
+          ],
+          "module_explanations": {
+            "evidence_verification": "No existing fact-check was found on Google Fact Check Tools; evidence module remained neutral (50/100).",
+            "similar_content": "Similar content was found from an earlier timestamp from 2020-03-15, indicating recycled material.",
+            "comment_analysis": "Crowdsourced Community Debunking: Comments strongly refute this post (3 comments identify it as false, fake, or a hoax).",
+            "user_behaviour": "Author activity contains anomalous behavioural patterns (e.g. unusual posting velocity or timeline repetition)."
+          },
+          "confidence_notes": [
+            "Absence of indexed fact-checks does not verify or disprove the post.",
+            "Behavioral anomaly detected in author profile indicates suspicious account activity, but does not alone prove content falsity.",
+            "Text displays human-written stylistic distribution (Statistical AI indicator: 20.2%). Note: Human-authored text does not guarantee factual accuracy."
+          ]
+        },
+        "ai_detection": {
+          "text_ai_detection": {
+            "ai_generation_probability": 20.18,
+            "confidence": "MEDIUM",
+            "model_used": "PerplexityTextAIDetector (Lexical Diversity & Uniformity Entropy)",
+            "metrics": {
+              "type_token_ratio": 1.0,
+              "length_std": 2.98,
+              "word_count": 20
+            },
+            "status": "ANALYZED"
+          }
+        },
+        "flags": [
+          "NO_MEDIA_ATTACHED",
+          "COMMENTS_DEBUNK_CLAIM",
+          "MATCHES_KNOWN_DEBUNKED_VIRAL_NARRATIVE",
+          "UNINDEXED_CLAIM",
+          "EXCESSIVE_HASHTAG_REPETITION",
+          "RECYCLED_HISTORICAL_CONTENT_DETECTED",
+          "NO_POST_TIMESTAMP",
+          "ANOMALOUS_BEHAVIOURAL_PATTERN",
+          "SENSATIONAL_VIRAL_FORMATTING",
+          "LIMITED_LOCAL_CORPUS_EVALUATED"
+        ],
+        "warnings": [
+          "No post timestamp provided; temporal age delta calculated from current time.",
+          "No definitive fact-checks indexed for post claim; evaluated at neutral baseline."
+        ],
+        "errors": []
+      },
+      "created_at": "2026-10-08T17:29:24.417673Z"
+    },
+    "math_match": true
+  },
+  "TEST 4 \u2014 AI-GENERATED BUT FACTUAL": {
+    "data": {
+      "request_id": "test_e2e_4_ai_factual",
+      "consolidated_score": 66.99,
+      "classification": "PROBABLY REAL",
+      "ai_generation_probability": 0.1581,
+      "explanation": "Social Guard evaluates this content as PROBABLY REAL (Credibility Score: 67.0/100). Module contributions: Evidence 20.0 pts (40%), Similar Content 21.2 pts (25%), Comment Analysis 13.0 pts (20%), User Behaviour 12.7 pts (15%). Key strength: No matching item found in current 3-item local historical corpus (no recycled hoax detected). No matching indexed fact-check was found on Google Fact Check Tools; evidence module remained neutral.",
+      "module_scores": {
+        "comment_analysis": 65.0,
+        "evidence_verification": 50.0,
+        "user_behaviour": 84.94,
+        "similar_content": 85.0
+      },
+      "request_info": {
+        "request_id": "test_e2e_4_ai_factual",
+        "received_at": "2026-10-08T17:29:27.816936+00:00",
+        "has_custom_weights": false
+      },
+      "post_info": {
+        "platform": "twitter",
+        "post_id": null,
+        "text": "The James Webb Space Telescope has successfully captured high-resolution transmission spectra of exoplanet WASP-96b, providing detailed atmospheric composition data and revealing definitive water vapor signatures.",
+        "text_length": 213,
+        "timestamp": null,
+        "hashtags": [
+          "#JWST",
+          "#Astronomy",
+          "#Exoplanets"
+        ],
+        "media_count": 1,
+        "media_urls": [
+          "https://example.com/wasp96b_spectrum.png"
+        ],
+        "comments_count": 1,
+        "has_author_metadata": true,
+        "author_username": "astro_science_briefs"
+      },
+      "module_1": {
+        "score": 65.0,
+        "status": "PARTIAL",
+        "comment_count": 1,
+        "duplicate_ratio": 0.0,
+        "semantic_similarity": 0.0,
+        "clusters": [],
+        "temporal_burst_score": 0.0,
+        "z_score": 0.0,
+        "iqr_outliers": [],
+        "emoji_entropy": 0.0,
+        "debunk_ratio": 0.0,
+        "support_ratio": 0.0,
+        "flags": [
+          "SINGLE_COMMENT_ONLY"
+        ],
+        "explanation": "Analyzed 1 comment with status [SINGLE_COMMENT].",
+        "metrics": {
+          "comment_count": 1,
+          "duplicate_ratio": 0.0,
+          "exact_duplicate_ratio": 0.0,
+          "near_duplicate_ratio": 0.0,
+          "average_similarity": 0.0,
+          "cluster_count": 1,
+          "largest_cluster_size": 1,
+          "emoji_ratio": 0.0,
+          "emoji_entropy": 0.0,
+          "excessive_emoji_ratio": 0.0,
+          "temporal_anomaly_score": 0.0,
+          "temporal_burst_score": 0.0,
+          "average_comments_per_minute": 0.0,
+          "max_comments_per_minute": 0.0,
+          "zscore_max": 0.0,
+          "z_score": 0.0,
+          "debunk_ratio": 0.0,
+          "support_ratio": 0.0
+        },
+        "fact_check": {
+          "verdict": "ORGANIC_DISCUSSION",
+          "debunk_ratio": 0.0,
+          "support_ratio": 0.0,
+          "debunk_count": 0,
+          "support_count": 0,
+          "has_fact_checker_reference": false,
+          "debunking_comments": [],
+          "extracted_comment_claims": [],
+          "summary": "Comments represent standard organic discussion (1 comments analyzed)."
+        }
+      },
+      "module_2": {
+        "score": 50.0,
+        "status": "PARTIAL",
+        "evidence_state": "NO_FACT_CHECK_FOUND",
+        "claims": [
+          "The James Webb Space Telescope has successfully captured high-resolution transmission spectra of exoplanet WASP-96b, providing detailed"
+        ],
+        "fact_checks": [],
+        "verified_count": 0,
+        "false_count": 0,
+        "unverified_count": 1,
+        "source_quality": 0.0,
+        "sources": [],
+        "flags": [
+          "UNINDEXED_CLAIM"
+        ],
+        "explanation": "No matching fact-check found in Google Fact Check index for 'The James Webb Space Telescope has successfully captured high-resolution transmission spectra of exoplanet WASP-96b, providing detailed'. Assigned neutral baseline score (50/100). Absence of fact-checks does not verify or disprove content."
+      },
+      "module_3": {
+        "score": 84.94,
+        "status": "COMPLETED",
+        "anomaly_score": 0.4604,
+        "is_anomalous": false,
+        "metrics": {
+          "account_age_days": 850.0,
+          "followers": 0.0,
+          "following": 0.0,
+          "follower_following_ratio": 0.0,
+          "posts_per_day": 2.0,
+          "comments_per_day": 3.0,
+          "average_posting_interval_seconds": 43200.0,
+          "engagement_rate": 0.03,
+          "duplicate_content_ratio": 0.05,
+          "hashtag_repetition_rate": 0.08,
+          "posts_per_day_zscore": -0.17,
+          "posts_per_day_iqr_outlier": 0.0,
+          "comments_per_day_zscore": -0.2,
+          "comments_per_day_iqr_outlier": 0.0,
+          "follower_following_ratio_zscore": -0.6,
+          "follower_following_ratio_iqr_outlier": 0.0,
+          "duplicate_content_ratio_zscore": 0.0,
+          "duplicate_content_ratio_iqr_outlier": 0.0,
+          "hashtag_repetition_rate_zscore": -0.27,
+          "hashtag_repetition_rate_iqr_outlier": 0.0,
+          "average_posting_interval_seconds_zscore": 0.72,
+          "average_posting_interval_seconds_iqr_outlier": 0.0,
+          "account_age_days_zscore": 0.5,
+          "account_age_days_iqr_outlier": 0.0,
+          "raw_isolation_forest_score": 0.0198,
+          "is_anomalous": false
+        },
+        "flags": [],
+        "explanation": "Account 'astro_science_briefs' exhibits mature, balanced engagement patterns with normal posting velocity (2.0 posts/day) and longevity (850 days)."
+      },
+      "module_4": {
+        "score": 85.0,
+        "status": "COMPLETED",
+        "recycled_content": false,
+        "visual_similarity": 0.0,
+        "semantic_similarity": 0.3379,
+        "keyword_similarity": 0.0,
+        "matches": [
+          {
+            "item_id": "hist_001",
+            "text": "NASA rovers detect liquid water beneath Martian polar ice caps in deep radar soundings.",
+            "visual_similarity": 0.0,
+            "semantic_similarity": 0.3379,
+            "keyword_similarity": 0.0,
+            "historical_age_days": 1967.2,
+            "first_seen_timestamp": "2021-05-20T12:00:00+00:00",
+            "is_known_debunked": false,
+            "source_context": "Verified 2021 scientific radar research announcement"
+          },
+          {
+            "item_id": "hist_003",
+            "text": "Free crypto airdrop giveaway! Send 0.1 ETH to verify your wallet and receive 2.0 ETH immediately.",
+            "visual_similarity": 0.0,
+            "semantic_similarity": 0.103,
+            "keyword_similarity": 0.0,
+            "historical_age_days": 1732.7,
+            "first_seen_timestamp": "2022-01-10T00:00:00+00:00",
+            "is_known_debunked": true,
+            "source_context": "Recycled cryptocurrency doubling scam template"
+          },
+          {
+            "item_id": "hist_002",
+            "text": "BREAKING: Governments announce emergency lockdown protocols across all international airports due to mystery virus!",
+            "visual_similarity": 0.0,
+            "semantic_similarity": 0.0436,
+            "keyword_similarity": 0.0,
+            "historical_age_days": 2398.4,
+            "first_seen_timestamp": "2020-03-15T08:30:00+00:00",
+            "is_known_debunked": true,
+            "source_context": "Debunked 2020 recycled viral hoax"
+          }
+        ],
+        "flags": [
+          "LIMITED_LOCAL_CORPUS_EVALUATED"
+        ],
+        "explanation": "Content demonstrates high originality; no matching recycled narrative found in current 3-item local historical corpus (max semantic similarity: 0.34, visual similarity: 0.00, keyword overlap: 0.00).",
+        "earliest_matching_timestamp": null,
+        "corpus_size": 3
+      },
+      "module_5": {
+        "final_score": 66.99,
+        "score": 66.99,
+        "status": "COMPLETED",
+        "classification": "PROBABLY REAL",
+        "confidence_level": "HIGH",
+        "confidence_interval": [
+          63.49,
+          70.49
+        ],
+        "formula_applied": "0.20*M1 + 0.40*M2 + 0.15*M3 + 0.25*M4",
+        "weights_applied": {
+          "comment_score": 0.2,
+          "evidence_score": 0.4,
+          "behaviour_score": 0.15,
+          "similarity_score": 0.25
+        },
+        "module_scores": {
+          "comment_analysis": 65.0,
+          "evidence_verification": 50.0,
+          "user_behaviour": 84.94,
+          "similar_content": 85.0
+        },
+        "weighted_contributions": {
+          "comment_analysis": 13.0,
+          "evidence_verification": 20.0,
+          "user_behaviour": 12.741,
+          "similar_content": 21.25,
+          "M1": 13.0,
+          "M2": 20.0,
+          "M3": 12.741,
+          "M4": 21.25
+        },
+        "flags": [],
+        "summary_explanation": "Final Credibility Score is 67.0/100 (PROBABLY REAL). Evidence Verification contributed 20.0 pts (weight 40%), Similar Content contributed 21.2 pts (weight 25%), Comment Analysis contributed 13.0 pts (weight 20%), and User Behaviour contributed 12.7 pts (weight 15%)."
+      },
+      "xai_explanation": {
+        "summary": "Social Guard evaluates this content as PROBABLY REAL (Credibility Score: 67.0/100). Module contributions: Evidence 20.0 pts (40%), Similar Content 21.2 pts (25%), Comment Analysis 13.0 pts (20%), User Behaviour 12.7 pts (15%). Key strength: No matching item found in current 3-item local historical corpus (no recycled hoax detected). No matching indexed fact-check was found on Google Fact Check Tools; evidence module remained neutral.",
+        "explanation_summary": "Social Guard evaluates this content as PROBABLY REAL (Credibility Score: 67.0/100). Module contributions: Evidence 20.0 pts (40%), Similar Content 21.2 pts (25%), Comment Analysis 13.0 pts (20%), User Behaviour 12.7 pts (15%). Key strength: No matching item found in current 3-item local historical corpus (no recycled hoax detected). No matching indexed fact-check was found on Google Fact Check Tools; evidence module remained neutral.",
+        "positive_factors": [
+          {
+            "factor": "No matching item found in current 3-item local historical corpus (no recycled hoax detected).",
+            "module": "similar_content",
+            "impact_weight": 0.2,
+            "similarity_score": 85.0
+          },
+          {
+            "factor": "Author account demonstrates mature longevity (850 days) and balanced activity.",
+            "module": "user_behaviour",
+            "impact_weight": 0.15,
+            "behaviour_score": 84.94
+          }
+        ],
+        "negative_factors": [],
+        "module_explanations": {
+          "evidence_verification": "No existing fact-check was found on Google Fact Check Tools; evidence module remained neutral (50/100).",
+          "similar_content": "No matching item found in current 3-item local historical corpus (no recycled hoax detected).",
+          "comment_analysis": "1 comment(s) extracted; sample size too small for statistical coordination analysis.",
+          "user_behaviour": "Author account demonstrates mature longevity (850 days) and balanced activity."
+        },
+        "confidence_notes": [
+          "Absence of indexed fact-checks does not verify or disprove the post.",
+          "Text displays human-written stylistic distribution (Statistical AI indicator: 15.8%). Note: Human-authored text does not guarantee factual accuracy."
+        ]
+      },
+      "processing_timings": {
+        "module_1_comments_ms": 0.2,
+        "module_2_evidence_ms": 1844.39,
+        "module_3_behaviour_ms": 15.27,
+        "module_4_similarity_ms": 726.54,
+        "module_5_fusion_ms": 0.06,
+        "ai_detection_ms": 807.19,
+        "explainability_ms": 0.03,
+        "total_pipeline_ms": 3394.49
+      },
+      "warnings": [
+        "No post timestamp provided; temporal age delta calculated from current time.",
+        "No definitive fact-checks indexed for post claim; evaluated at neutral baseline."
+      ],
+      "errors": [],
+      "module_results": {
+        "timings_ms": {
+          "comment_analysis_ms": 0.2,
+          "evidence_verification_ms": 1844.39,
+          "user_behaviour_ms": 15.27,
+          "similar_content_ms": 726.54,
+          "score_fusion_ms": 0.06,
+          "ai_detection_ms": 807.19,
+          "explainability_ms": 0.03,
+          "total_pipeline_ms": 3394.49
+        },
+        "module_breakdowns": {
+          "comments": {
+            "score": 65.0,
+            "status": "PARTIAL",
+            "comment_count": 1,
+            "duplicate_ratio": 0.0,
+            "semantic_similarity": 0.0,
+            "clusters": [],
+            "temporal_burst_score": 0.0,
+            "z_score": 0.0,
+            "iqr_outliers": [],
+            "emoji_entropy": 0.0,
+            "debunk_ratio": 0.0,
+            "support_ratio": 0.0,
+            "flags": [
+              "SINGLE_COMMENT_ONLY"
+            ],
+            "explanation": "Analyzed 1 comment with status [SINGLE_COMMENT].",
+            "metrics": {
+              "comment_count": 1,
+              "duplicate_ratio": 0.0,
+              "exact_duplicate_ratio": 0.0,
+              "near_duplicate_ratio": 0.0,
+              "average_similarity": 0.0,
+              "cluster_count": 1,
+              "largest_cluster_size": 1,
+              "emoji_ratio": 0.0,
+              "emoji_entropy": 0.0,
+              "excessive_emoji_ratio": 0.0,
+              "temporal_anomaly_score": 0.0,
+              "temporal_burst_score": 0.0,
+              "average_comments_per_minute": 0.0,
+              "max_comments_per_minute": 0.0,
+              "zscore_max": 0.0,
+              "z_score": 0.0,
+              "debunk_ratio": 0.0,
+              "support_ratio": 0.0
+            },
+            "fact_check": {
+              "verdict": "ORGANIC_DISCUSSION",
+              "debunk_ratio": 0.0,
+              "support_ratio": 0.0,
+              "debunk_count": 0,
+              "support_count": 0,
+              "has_fact_checker_reference": false,
+              "debunking_comments": [],
+              "extracted_comment_claims": [],
+              "summary": "Comments represent standard organic discussion (1 comments analyzed)."
+            }
+          },
+          "evidence": {
+            "score": 50.0,
+            "status": "PARTIAL",
+            "evidence_state": "NO_FACT_CHECK_FOUND",
+            "claims": [
+              "The James Webb Space Telescope has successfully captured high-resolution transmission spectra of exoplanet WASP-96b, providing detailed"
+            ],
+            "fact_checks": [],
+            "verified_count": 0,
+            "false_count": 0,
+            "unverified_count": 1,
+            "source_quality": 0.0,
+            "sources": [],
+            "flags": [
+              "UNINDEXED_CLAIM"
+            ],
+            "explanation": "No matching fact-check found in Google Fact Check index for 'The James Webb Space Telescope has successfully captured high-resolution transmission spectra of exoplanet WASP-96b, providing detailed'. Assigned neutral baseline score (50/100). Absence of fact-checks does not verify or disprove content."
+          },
+          "user_behaviour": {
+            "score": 84.94,
+            "status": "COMPLETED",
+            "anomaly_score": 0.4604,
+            "is_anomalous": false,
+            "metrics": {
+              "account_age_days": 850.0,
+              "followers": 0.0,
+              "following": 0.0,
+              "follower_following_ratio": 0.0,
+              "posts_per_day": 2.0,
+              "comments_per_day": 3.0,
+              "average_posting_interval_seconds": 43200.0,
+              "engagement_rate": 0.03,
+              "duplicate_content_ratio": 0.05,
+              "hashtag_repetition_rate": 0.08,
+              "posts_per_day_zscore": -0.17,
+              "posts_per_day_iqr_outlier": 0.0,
+              "comments_per_day_zscore": -0.2,
+              "comments_per_day_iqr_outlier": 0.0,
+              "follower_following_ratio_zscore": -0.6,
+              "follower_following_ratio_iqr_outlier": 0.0,
+              "duplicate_content_ratio_zscore": 0.0,
+              "duplicate_content_ratio_iqr_outlier": 0.0,
+              "hashtag_repetition_rate_zscore": -0.27,
+              "hashtag_repetition_rate_iqr_outlier": 0.0,
+              "average_posting_interval_seconds_zscore": 0.72,
+              "average_posting_interval_seconds_iqr_outlier": 0.0,
+              "account_age_days_zscore": 0.5,
+              "account_age_days_iqr_outlier": 0.0,
+              "raw_isolation_forest_score": 0.0198,
+              "is_anomalous": false
+            },
+            "flags": [],
+            "explanation": "Account 'astro_science_briefs' exhibits mature, balanced engagement patterns with normal posting velocity (2.0 posts/day) and longevity (850 days)."
+          },
+          "similarity": {
+            "score": 85.0,
+            "status": "COMPLETED",
+            "recycled_content": false,
+            "visual_similarity": 0.0,
+            "semantic_similarity": 0.3379,
+            "keyword_similarity": 0.0,
+            "matches": [
+              {
+                "item_id": "hist_001",
+                "text": "NASA rovers detect liquid water beneath Martian polar ice caps in deep radar soundings.",
+                "visual_similarity": 0.0,
+                "semantic_similarity": 0.3379,
+                "keyword_similarity": 0.0,
+                "historical_age_days": 1967.2,
+                "first_seen_timestamp": "2021-05-20T12:00:00+00:00",
+                "is_known_debunked": false,
+                "source_context": "Verified 2021 scientific radar research announcement"
+              },
+              {
+                "item_id": "hist_003",
+                "text": "Free crypto airdrop giveaway! Send 0.1 ETH to verify your wallet and receive 2.0 ETH immediately.",
+                "visual_similarity": 0.0,
+                "semantic_similarity": 0.103,
+                "keyword_similarity": 0.0,
+                "historical_age_days": 1732.7,
+                "first_seen_timestamp": "2022-01-10T00:00:00+00:00",
+                "is_known_debunked": true,
+                "source_context": "Recycled cryptocurrency doubling scam template"
+              },
+              {
+                "item_id": "hist_002",
+                "text": "BREAKING: Governments announce emergency lockdown protocols across all international airports due to mystery virus!",
+                "visual_similarity": 0.0,
+                "semantic_similarity": 0.0436,
+                "keyword_similarity": 0.0,
+                "historical_age_days": 2398.4,
+                "first_seen_timestamp": "2020-03-15T08:30:00+00:00",
+                "is_known_debunked": true,
+                "source_context": "Debunked 2020 recycled viral hoax"
+              }
+            ],
+            "flags": [
+              "LIMITED_LOCAL_CORPUS_EVALUATED"
+            ],
+            "explanation": "Content demonstrates high originality; no matching recycled narrative found in current 3-item local historical corpus (max semantic similarity: 0.34, visual similarity: 0.00, keyword overlap: 0.00).",
+            "earliest_matching_timestamp": null,
+            "corpus_size": 3
+          },
+          "fusion": {
+            "final_score": 66.99,
+            "score": 66.99,
+            "status": "COMPLETED",
+            "classification": "PROBABLY REAL",
+            "confidence_level": "HIGH",
+            "confidence_interval": [
+              63.49,
+              70.49
+            ],
+            "formula_applied": "0.20*M1 + 0.40*M2 + 0.15*M3 + 0.25*M4",
+            "weights_applied": {
+              "comment_score": 0.2,
+              "evidence_score": 0.4,
+              "behaviour_score": 0.15,
+              "similarity_score": 0.25
+            },
+            "module_scores": {
+              "comment_analysis": 65.0,
+              "evidence_verification": 50.0,
+              "user_behaviour": 84.94,
+              "similar_content": 85.0
+            },
+            "weighted_contributions": {
+              "comment_analysis": 13.0,
+              "evidence_verification": 20.0,
+              "user_behaviour": 12.741,
+              "similar_content": 21.25,
+              "M1": 13.0,
+              "M2": 20.0,
+              "M3": 12.741,
+              "M4": 21.25
+            },
+            "flags": [],
+            "summary_explanation": "Final Credibility Score is 67.0/100 (PROBABLY REAL). Evidence Verification contributed 20.0 pts (weight 40%), Similar Content contributed 21.2 pts (weight 25%), Comment Analysis contributed 13.0 pts (weight 20%), and User Behaviour contributed 12.7 pts (weight 15%)."
+          }
+        },
+        "explainability": {
+          "summary": "Social Guard evaluates this content as PROBABLY REAL (Credibility Score: 67.0/100). Module contributions: Evidence 20.0 pts (40%), Similar Content 21.2 pts (25%), Comment Analysis 13.0 pts (20%), User Behaviour 12.7 pts (15%). Key strength: No matching item found in current 3-item local historical corpus (no recycled hoax detected). No matching indexed fact-check was found on Google Fact Check Tools; evidence module remained neutral.",
+          "explanation_summary": "Social Guard evaluates this content as PROBABLY REAL (Credibility Score: 67.0/100). Module contributions: Evidence 20.0 pts (40%), Similar Content 21.2 pts (25%), Comment Analysis 13.0 pts (20%), User Behaviour 12.7 pts (15%). Key strength: No matching item found in current 3-item local historical corpus (no recycled hoax detected). No matching indexed fact-check was found on Google Fact Check Tools; evidence module remained neutral.",
+          "positive_factors": [
+            {
+              "factor": "No matching item found in current 3-item local historical corpus (no recycled hoax detected).",
+              "module": "similar_content",
+              "impact_weight": 0.2,
+              "similarity_score": 85.0
+            },
+            {
+              "factor": "Author account demonstrates mature longevity (850 days) and balanced activity.",
+              "module": "user_behaviour",
+              "impact_weight": 0.15,
+              "behaviour_score": 84.94
+            }
+          ],
+          "negative_factors": [],
+          "module_explanations": {
+            "evidence_verification": "No existing fact-check was found on Google Fact Check Tools; evidence module remained neutral (50/100).",
+            "similar_content": "No matching item found in current 3-item local historical corpus (no recycled hoax detected).",
+            "comment_analysis": "1 comment(s) extracted; sample size too small for statistical coordination analysis.",
+            "user_behaviour": "Author account demonstrates mature longevity (850 days) and balanced activity."
+          },
+          "confidence_notes": [
+            "Absence of indexed fact-checks does not verify or disprove the post.",
+            "Text displays human-written stylistic distribution (Statistical AI indicator: 15.8%). Note: Human-authored text does not guarantee factual accuracy."
+          ]
+        },
+        "ai_detection": {
+          "media_ai_detection": {
+            "ai_generation_probability": null,
+            "media_type": "image",
+            "status": "DOWNLOAD_FAILED",
+            "explanation": "Failed to download image from source (HTTP 404)."
+          },
+          "text_ai_detection": {
+            "ai_generation_probability": 15.81,
+            "confidence": "MEDIUM",
+            "model_used": "PerplexityTextAIDetector (Lexical Diversity & Uniformity Entropy)",
+            "metrics": {
+              "type_token_ratio": 1.0,
+              "length_std": 3.42,
+              "word_count": 25
+            },
+            "status": "ANALYZED"
+          }
+        },
+        "flags": [
+          "UNINDEXED_CLAIM",
+          "NO_POST_TIMESTAMP",
+          "SINGLE_COMMENT_ONLY",
+          "LIMITED_LOCAL_CORPUS_EVALUATED"
+        ],
+        "warnings": [
+          "No post timestamp provided; temporal age delta calculated from current time.",
+          "No definitive fact-checks indexed for post claim; evaluated at neutral baseline."
+        ],
+        "errors": []
+      },
+      "created_at": "2026-10-08T17:29:27.816966Z"
+    },
+    "math_match": true
+  },
+  "TEST 5 \u2014 HUMAN-MADE FALSE CONTENT": {
+    "data": {
+      "request_id": "test_e2e_5_human_false",
+      "consolidated_score": 52.23,
+      "classification": "UNCERTAIN",
+      "ai_generation_probability": 0.3128,
+      "explanation": "Social Guard evaluates this content as UNCERTAIN (Credibility Score: 52.2/100). Module contributions: Evidence 20.0 pts (40%), Similar Content 12.5 pts (25%), Comment Analysis 7.0 pts (20%), User Behaviour 12.7 pts (15%). Key risk: Crowdsourced Community Debunking: Comments strongly refute this post (1 comments identify it as false, fake, or a hoax). No matching indexed fact-check was found on Google Fact Check Tools; evidence module remained neutral.",
+      "module_scores": {
+        "comment_analysis": 35.0,
+        "evidence_verification": 50.0,
+        "user_behaviour": 84.89,
+        "similar_content": 50.0
+      },
+      "request_info": {
+        "request_id": "test_e2e_5_human_false",
+        "received_at": "2026-10-08T17:29:30.002395+00:00",
+        "has_custom_weights": false
+      },
+      "post_info": {
+        "platform": "twitter",
+        "post_id": null,
+        "text": "yo guys my uncle works at the water plant and told me they putting mind control chemicals in the tap water tonight dont drink it for real!!!",
+        "text_length": 140,
+        "timestamp": null,
+        "hashtags": [
+          "#staywoke",
+          "#wateralert"
+        ],
+        "media_count": 0,
+        "media_urls": [],
+        "comments_count": 2,
+        "has_author_metadata": true,
+        "author_username": "conspiracy_joe_99"
+      },
+      "module_1": {
+        "score": 35.0,
+        "status": "PARTIAL",
+        "comment_count": 2,
+        "duplicate_ratio": 0.0,
+        "semantic_similarity": 0.1891,
+        "clusters": [],
+        "temporal_burst_score": 0.0,
+        "z_score": 0.0,
+        "iqr_outliers": [],
+        "emoji_entropy": 0.0,
+        "debunk_ratio": 0.5,
+        "support_ratio": 0.0,
+        "flags": [
+          "COMMENTS_DEBUNK_CLAIM"
+        ],
+        "explanation": "Analyzed 2 comments with status [DEBUNKED]. Community debunking detected: 1 comments refute the claim.",
+        "metrics": {
+          "comment_count": 2,
+          "duplicate_ratio": 0.0,
+          "exact_duplicate_ratio": 0.0,
+          "near_duplicate_ratio": 0.0,
+          "average_similarity": 0.1891,
+          "cluster_count": 2,
+          "largest_cluster_size": 1,
+          "emoji_ratio": 0.0,
+          "emoji_entropy": 0.0,
+          "excessive_emoji_ratio": 0.0,
+          "temporal_anomaly_score": 0.0,
+          "temporal_burst_score": 0.0,
+          "average_comments_per_minute": 0.0,
+          "max_comments_per_minute": 0.0,
+          "zscore_max": 0.0,
+          "z_score": 0.0,
+          "debunk_ratio": 0.5,
+          "support_ratio": 0.0
+        },
+        "fact_check": {
+          "verdict": "DEBUNKED_BY_COMMUNITY",
+          "debunk_ratio": 0.5,
+          "support_ratio": 0.0,
+          "debunk_count": 1,
+          "support_count": 0,
+          "has_fact_checker_reference": false,
+          "debunking_comments": [
+            "Fake news hoax, water plant officials already laughed this off"
+          ],
+          "extracted_comment_claims": [
+            "Fake news hoax, water plant officials already laughed this off"
+          ],
+          "summary": "Strong community debunking detected: 1 of 2 comments refute this claim as false, fake, or a hoax."
+        }
+      },
+      "module_2": {
+        "score": 50.0,
+        "status": "PARTIAL",
+        "evidence_state": "NO_FACT_CHECK_FOUND",
+        "claims": [
+          "yo guys my uncle works at the water plant and told me they putting mind control"
+        ],
+        "fact_checks": [],
+        "verified_count": 0,
+        "false_count": 0,
+        "unverified_count": 1,
+        "source_quality": 0.0,
+        "sources": [],
+        "flags": [
+          "UNINDEXED_CLAIM"
+        ],
+        "explanation": "No matching fact-check found in Google Fact Check index for 'yo guys my uncle works at the water plant and told me they putting mind control'. Assigned neutral baseline score (50/100). Absence of fact-checks does not verify or disprove content."
+      },
+      "module_3": {
+        "score": 84.89,
+        "status": "COMPLETED",
+        "anomaly_score": 0.462,
+        "is_anomalous": false,
+        "metrics": {
+          "account_age_days": 1800.0,
+          "followers": 0.0,
+          "following": 0.0,
+          "follower_following_ratio": 0.0,
+          "posts_per_day": 2.0,
+          "comments_per_day": 3.0,
+          "average_posting_interval_seconds": 43200.0,
+          "engagement_rate": 0.03,
+          "duplicate_content_ratio": 0.05,
+          "hashtag_repetition_rate": 0.09,
+          "posts_per_day_zscore": -0.17,
+          "posts_per_day_iqr_outlier": 0.0,
+          "comments_per_day_zscore": -0.2,
+          "comments_per_day_iqr_outlier": 0.0,
+          "follower_following_ratio_zscore": -0.6,
+          "follower_following_ratio_iqr_outlier": 0.0,
+          "duplicate_content_ratio_zscore": 0.0,
+          "duplicate_content_ratio_iqr_outlier": 0.0,
+          "hashtag_repetition_rate_zscore": -0.2,
+          "hashtag_repetition_rate_iqr_outlier": 0.0,
+          "average_posting_interval_seconds_zscore": 0.72,
+          "average_posting_interval_seconds_iqr_outlier": 0.0,
+          "account_age_days_zscore": 2.4,
+          "account_age_days_iqr_outlier": 0.0,
+          "raw_isolation_forest_score": 0.019,
+          "is_anomalous": false
+        },
+        "flags": [],
+        "explanation": "Account 'conspiracy_joe_99' exhibits mature, balanced engagement patterns with normal posting velocity (2.0 posts/day) and longevity (1800 days)."
+      },
+      "module_4": {
+        "score": 50.0,
+        "status": "COMPLETED",
+        "recycled_content": false,
+        "visual_similarity": 0.0,
+        "semantic_similarity": 0.1821,
+        "keyword_similarity": 0.0476,
+        "matches": [
+          {
+            "item_id": "hist_001",
+            "text": "NASA rovers detect liquid water beneath Martian polar ice caps in deep radar soundings.",
+            "visual_similarity": 0.0,
+            "semantic_similarity": 0.1821,
+            "keyword_similarity": 0.0476,
+            "historical_age_days": 1967.2,
+            "first_seen_timestamp": "2021-05-20T12:00:00+00:00",
+            "is_known_debunked": false,
+            "source_context": "Verified 2021 scientific radar research announcement"
+          },
+          {
+            "item_id": "hist_002",
+            "text": "BREAKING: Governments announce emergency lockdown protocols across all international airports due to mystery virus!",
+            "visual_similarity": 0.0,
+            "semantic_similarity": 0.0127,
+            "keyword_similarity": 0.0,
+            "historical_age_days": 2398.4,
+            "first_seen_timestamp": "2020-03-15T08:30:00+00:00",
+            "is_known_debunked": true,
+            "source_context": "Debunked 2020 recycled viral hoax"
+          },
+          {
+            "item_id": "hist_003",
+            "text": "Free crypto airdrop giveaway! Send 0.1 ETH to verify your wallet and receive 2.0 ETH immediately.",
+            "visual_similarity": 0.0,
+            "semantic_similarity": 0.0,
+            "keyword_similarity": 0.0,
+            "historical_age_days": 1732.7,
+            "first_seen_timestamp": "2022-01-10T00:00:00+00:00",
+            "is_known_debunked": true,
+            "source_context": "Recycled cryptocurrency doubling scam template"
+          }
+        ],
+        "flags": [
+          "LIMITED_LOCAL_CORPUS_EVALUATED",
+          "SENSATIONAL_VIRAL_FORMATTING"
+        ],
+        "explanation": "Content demonstrates high originality; no matching recycled narrative found in current 3-item local historical corpus (max semantic similarity: 0.18, visual similarity: 0.00, keyword overlap: 0.05).",
+        "earliest_matching_timestamp": null,
+        "corpus_size": 3
+      },
+      "module_5": {
+        "final_score": 52.23,
+        "score": 52.23,
+        "status": "COMPLETED",
+        "classification": "UNCERTAIN",
+        "confidence_level": "MEDIUM",
+        "confidence_interval": [
+          46.23,
+          58.23
+        ],
+        "formula_applied": "0.20*M1 + 0.40*M2 + 0.15*M3 + 0.25*M4",
+        "weights_applied": {
+          "comment_score": 0.2,
+          "evidence_score": 0.4,
+          "behaviour_score": 0.15,
+          "similarity_score": 0.25
+        },
+        "module_scores": {
+          "comment_analysis": 35.0,
+          "evidence_verification": 50.0,
+          "user_behaviour": 84.89,
+          "similar_content": 50.0
+        },
+        "weighted_contributions": {
+          "comment_analysis": 7.0,
+          "evidence_verification": 20.0,
+          "user_behaviour": 12.733,
+          "similar_content": 12.5,
+          "M1": 7.0,
+          "M2": 20.0,
+          "M3": 12.733,
+          "M4": 12.5
+        },
+        "flags": [],
+        "summary_explanation": "Final Credibility Score is 52.2/100 (UNCERTAIN). Evidence Verification contributed 20.0 pts (weight 40%), Similar Content contributed 12.5 pts (weight 25%), Comment Analysis contributed 7.0 pts (weight 20%), and User Behaviour contributed 12.7 pts (weight 15%)."
+      },
+      "xai_explanation": {
+        "summary": "Social Guard evaluates this content as UNCERTAIN (Credibility Score: 52.2/100). Module contributions: Evidence 20.0 pts (40%), Similar Content 12.5 pts (25%), Comment Analysis 7.0 pts (20%), User Behaviour 12.7 pts (15%). Key risk: Crowdsourced Community Debunking: Comments strongly refute this post (1 comments identify it as false, fake, or a hoax). No matching indexed fact-check was found on Google Fact Check Tools; evidence module remained neutral.",
+        "explanation_summary": "Social Guard evaluates this content as UNCERTAIN (Credibility Score: 52.2/100). Module contributions: Evidence 20.0 pts (40%), Similar Content 12.5 pts (25%), Comment Analysis 7.0 pts (20%), User Behaviour 12.7 pts (15%). Key risk: Crowdsourced Community Debunking: Comments strongly refute this post (1 comments identify it as false, fake, or a hoax). No matching indexed fact-check was found on Google Fact Check Tools; evidence module remained neutral.",
+        "positive_factors": [
+          {
+            "factor": "Author account demonstrates mature longevity (1800 days) and balanced activity.",
+            "module": "user_behaviour",
+            "impact_weight": 0.15,
+            "behaviour_score": 84.89
+          }
+        ],
+        "negative_factors": [
+          {
+            "factor": "Crowdsourced Community Debunking: Comments strongly refute this post (1 comments identify it as false, fake, or a hoax).",
+            "module": "comment_analysis",
+            "impact_weight": 0.25,
+            "debunk_ratio": 0.5
+          }
+        ],
+        "module_explanations": {
+          "evidence_verification": "No existing fact-check was found on Google Fact Check Tools; evidence module remained neutral (50/100).",
+          "similar_content": "Moderate similarity (0.00) detected against 3-item local historical corpus.",
+          "comment_analysis": "Crowdsourced Community Debunking: Comments strongly refute this post (1 comments identify it as false, fake, or a hoax).",
+          "user_behaviour": "Author account demonstrates mature longevity (1800 days) and balanced activity."
+        },
+        "confidence_notes": [
+          "Absence of indexed fact-checks does not verify or disprove the post.",
+          "Text stylistic markers are mixed (Statistical AI indicator: 31.3%)."
+        ]
+      },
+      "processing_timings": {
+        "module_1_comments_ms": 16.02,
+        "module_2_evidence_ms": 2137.55,
+        "module_3_behaviour_ms": 13.22,
+        "module_4_similarity_ms": 14.3,
+        "module_5_fusion_ms": 0.05,
+        "ai_detection_ms": 0.12,
+        "explainability_ms": 0.04,
+        "total_pipeline_ms": 2181.98
+      },
+      "warnings": [
+        "No post timestamp provided; temporal age delta calculated from current time.",
+        "No definitive fact-checks indexed for post claim; evaluated at neutral baseline."
+      ],
+      "errors": [],
+      "module_results": {
+        "timings_ms": {
+          "comment_analysis_ms": 16.02,
+          "evidence_verification_ms": 2137.55,
+          "user_behaviour_ms": 13.22,
+          "similar_content_ms": 14.3,
+          "score_fusion_ms": 0.05,
+          "ai_detection_ms": 0.12,
+          "explainability_ms": 0.04,
+          "total_pipeline_ms": 2181.98
+        },
+        "module_breakdowns": {
+          "comments": {
+            "score": 35.0,
+            "status": "PARTIAL",
+            "comment_count": 2,
+            "duplicate_ratio": 0.0,
+            "semantic_similarity": 0.1891,
+            "clusters": [],
+            "temporal_burst_score": 0.0,
+            "z_score": 0.0,
+            "iqr_outliers": [],
+            "emoji_entropy": 0.0,
+            "debunk_ratio": 0.5,
+            "support_ratio": 0.0,
+            "flags": [
+              "COMMENTS_DEBUNK_CLAIM"
+            ],
+            "explanation": "Analyzed 2 comments with status [DEBUNKED]. Community debunking detected: 1 comments refute the claim.",
+            "metrics": {
+              "comment_count": 2,
+              "duplicate_ratio": 0.0,
+              "exact_duplicate_ratio": 0.0,
+              "near_duplicate_ratio": 0.0,
+              "average_similarity": 0.1891,
+              "cluster_count": 2,
+              "largest_cluster_size": 1,
+              "emoji_ratio": 0.0,
+              "emoji_entropy": 0.0,
+              "excessive_emoji_ratio": 0.0,
+              "temporal_anomaly_score": 0.0,
+              "temporal_burst_score": 0.0,
+              "average_comments_per_minute": 0.0,
+              "max_comments_per_minute": 0.0,
+              "zscore_max": 0.0,
+              "z_score": 0.0,
+              "debunk_ratio": 0.5,
+              "support_ratio": 0.0
+            },
+            "fact_check": {
+              "verdict": "DEBUNKED_BY_COMMUNITY",
+              "debunk_ratio": 0.5,
+              "support_ratio": 0.0,
+              "debunk_count": 1,
+              "support_count": 0,
+              "has_fact_checker_reference": false,
+              "debunking_comments": [
+                "Fake news hoax, water plant officials already laughed this off"
+              ],
+              "extracted_comment_claims": [
+                "Fake news hoax, water plant officials already laughed this off"
+              ],
+              "summary": "Strong community debunking detected: 1 of 2 comments refute this claim as false, fake, or a hoax."
+            }
+          },
+          "evidence": {
+            "score": 50.0,
+            "status": "PARTIAL",
+            "evidence_state": "NO_FACT_CHECK_FOUND",
+            "claims": [
+              "yo guys my uncle works at the water plant and told me they putting mind control"
+            ],
+            "fact_checks": [],
+            "verified_count": 0,
+            "false_count": 0,
+            "unverified_count": 1,
+            "source_quality": 0.0,
+            "sources": [],
+            "flags": [
+              "UNINDEXED_CLAIM"
+            ],
+            "explanation": "No matching fact-check found in Google Fact Check index for 'yo guys my uncle works at the water plant and told me they putting mind control'. Assigned neutral baseline score (50/100). Absence of fact-checks does not verify or disprove content."
+          },
+          "user_behaviour": {
+            "score": 84.89,
+            "status": "COMPLETED",
+            "anomaly_score": 0.462,
+            "is_anomalous": false,
+            "metrics": {
+              "account_age_days": 1800.0,
+              "followers": 0.0,
+              "following": 0.0,
+              "follower_following_ratio": 0.0,
+              "posts_per_day": 2.0,
+              "comments_per_day": 3.0,
+              "average_posting_interval_seconds": 43200.0,
+              "engagement_rate": 0.03,
+              "duplicate_content_ratio": 0.05,
+              "hashtag_repetition_rate": 0.09,
+              "posts_per_day_zscore": -0.17,
+              "posts_per_day_iqr_outlier": 0.0,
+              "comments_per_day_zscore": -0.2,
+              "comments_per_day_iqr_outlier": 0.0,
+              "follower_following_ratio_zscore": -0.6,
+              "follower_following_ratio_iqr_outlier": 0.0,
+              "duplicate_content_ratio_zscore": 0.0,
+              "duplicate_content_ratio_iqr_outlier": 0.0,
+              "hashtag_repetition_rate_zscore": -0.2,
+              "hashtag_repetition_rate_iqr_outlier": 0.0,
+              "average_posting_interval_seconds_zscore": 0.72,
+              "average_posting_interval_seconds_iqr_outlier": 0.0,
+              "account_age_days_zscore": 2.4,
+              "account_age_days_iqr_outlier": 0.0,
+              "raw_isolation_forest_score": 0.019,
+              "is_anomalous": false
+            },
+            "flags": [],
+            "explanation": "Account 'conspiracy_joe_99' exhibits mature, balanced engagement patterns with normal posting velocity (2.0 posts/day) and longevity (1800 days)."
+          },
+          "similarity": {
+            "score": 50.0,
+            "status": "COMPLETED",
+            "recycled_content": false,
+            "visual_similarity": 0.0,
+            "semantic_similarity": 0.1821,
+            "keyword_similarity": 0.0476,
+            "matches": [
+              {
+                "item_id": "hist_001",
+                "text": "NASA rovers detect liquid water beneath Martian polar ice caps in deep radar soundings.",
+                "visual_similarity": 0.0,
+                "semantic_similarity": 0.1821,
+                "keyword_similarity": 0.0476,
+                "historical_age_days": 1967.2,
+                "first_seen_timestamp": "2021-05-20T12:00:00+00:00",
+                "is_known_debunked": false,
+                "source_context": "Verified 2021 scientific radar research announcement"
+              },
+              {
+                "item_id": "hist_002",
+                "text": "BREAKING: Governments announce emergency lockdown protocols across all international airports due to mystery virus!",
+                "visual_similarity": 0.0,
+                "semantic_similarity": 0.0127,
+                "keyword_similarity": 0.0,
+                "historical_age_days": 2398.4,
+                "first_seen_timestamp": "2020-03-15T08:30:00+00:00",
+                "is_known_debunked": true,
+                "source_context": "Debunked 2020 recycled viral hoax"
+              },
+              {
+                "item_id": "hist_003",
+                "text": "Free crypto airdrop giveaway! Send 0.1 ETH to verify your wallet and receive 2.0 ETH immediately.",
+                "visual_similarity": 0.0,
+                "semantic_similarity": 0.0,
+                "keyword_similarity": 0.0,
+                "historical_age_days": 1732.7,
+                "first_seen_timestamp": "2022-01-10T00:00:00+00:00",
+                "is_known_debunked": true,
+                "source_context": "Recycled cryptocurrency doubling scam template"
+              }
+            ],
+            "flags": [
+              "LIMITED_LOCAL_CORPUS_EVALUATED",
+              "SENSATIONAL_VIRAL_FORMATTING"
+            ],
+            "explanation": "Content demonstrates high originality; no matching recycled narrative found in current 3-item local historical corpus (max semantic similarity: 0.18, visual similarity: 0.00, keyword overlap: 0.05).",
+            "earliest_matching_timestamp": null,
+            "corpus_size": 3
+          },
+          "fusion": {
+            "final_score": 52.23,
+            "score": 52.23,
+            "status": "COMPLETED",
+            "classification": "UNCERTAIN",
+            "confidence_level": "MEDIUM",
+            "confidence_interval": [
+              46.23,
+              58.23
+            ],
+            "formula_applied": "0.20*M1 + 0.40*M2 + 0.15*M3 + 0.25*M4",
+            "weights_applied": {
+              "comment_score": 0.2,
+              "evidence_score": 0.4,
+              "behaviour_score": 0.15,
+              "similarity_score": 0.25
+            },
+            "module_scores": {
+              "comment_analysis": 35.0,
+              "evidence_verification": 50.0,
+              "user_behaviour": 84.89,
+              "similar_content": 50.0
+            },
+            "weighted_contributions": {
+              "comment_analysis": 7.0,
+              "evidence_verification": 20.0,
+              "user_behaviour": 12.733,
+              "similar_content": 12.5,
+              "M1": 7.0,
+              "M2": 20.0,
+              "M3": 12.733,
+              "M4": 12.5
+            },
+            "flags": [],
+            "summary_explanation": "Final Credibility Score is 52.2/100 (UNCERTAIN). Evidence Verification contributed 20.0 pts (weight 40%), Similar Content contributed 12.5 pts (weight 25%), Comment Analysis contributed 7.0 pts (weight 20%), and User Behaviour contributed 12.7 pts (weight 15%)."
+          }
+        },
+        "explainability": {
+          "summary": "Social Guard evaluates this content as UNCERTAIN (Credibility Score: 52.2/100). Module contributions: Evidence 20.0 pts (40%), Similar Content 12.5 pts (25%), Comment Analysis 7.0 pts (20%), User Behaviour 12.7 pts (15%). Key risk: Crowdsourced Community Debunking: Comments strongly refute this post (1 comments identify it as false, fake, or a hoax). No matching indexed fact-check was found on Google Fact Check Tools; evidence module remained neutral.",
+          "explanation_summary": "Social Guard evaluates this content as UNCERTAIN (Credibility Score: 52.2/100). Module contributions: Evidence 20.0 pts (40%), Similar Content 12.5 pts (25%), Comment Analysis 7.0 pts (20%), User Behaviour 12.7 pts (15%). Key risk: Crowdsourced Community Debunking: Comments strongly refute this post (1 comments identify it as false, fake, or a hoax). No matching indexed fact-check was found on Google Fact Check Tools; evidence module remained neutral.",
+          "positive_factors": [
+            {
+              "factor": "Author account demonstrates mature longevity (1800 days) and balanced activity.",
+              "module": "user_behaviour",
+              "impact_weight": 0.15,
+              "behaviour_score": 84.89
+            }
+          ],
+          "negative_factors": [
+            {
+              "factor": "Crowdsourced Community Debunking: Comments strongly refute this post (1 comments identify it as false, fake, or a hoax).",
+              "module": "comment_analysis",
+              "impact_weight": 0.25,
+              "debunk_ratio": 0.5
+            }
+          ],
+          "module_explanations": {
+            "evidence_verification": "No existing fact-check was found on Google Fact Check Tools; evidence module remained neutral (50/100).",
+            "similar_content": "Moderate similarity (0.00) detected against 3-item local historical corpus.",
+            "comment_analysis": "Crowdsourced Community Debunking: Comments strongly refute this post (1 comments identify it as false, fake, or a hoax).",
+            "user_behaviour": "Author account demonstrates mature longevity (1800 days) and balanced activity."
+          },
+          "confidence_notes": [
+            "Absence of indexed fact-checks does not verify or disprove the post.",
+            "Text stylistic markers are mixed (Statistical AI indicator: 31.3%)."
+          ]
+        },
+        "ai_detection": {
+          "text_ai_detection": {
+            "ai_generation_probability": 31.28,
+            "confidence": "MEDIUM",
+            "model_used": "PerplexityTextAIDetector (Lexical Diversity & Uniformity Entropy)",
+            "metrics": {
+              "type_token_ratio": 0.9259,
+              "length_std": 1.87,
+              "word_count": 27
+            },
+            "status": "ANALYZED"
+          }
+        },
+        "flags": [
+          "NO_MEDIA_ATTACHED",
+          "COMMENTS_DEBUNK_CLAIM",
+          "UNINDEXED_CLAIM",
+          "NO_POST_TIMESTAMP",
+          "SENSATIONAL_VIRAL_FORMATTING",
+          "LIMITED_LOCAL_CORPUS_EVALUATED"
+        ],
+        "warnings": [
+          "No post timestamp provided; temporal age delta calculated from current time.",
+          "No definitive fact-checks indexed for post claim; evaluated at neutral baseline."
+        ],
+        "errors": []
+      },
+      "created_at": "2026-10-08T17:29:30.002424Z"
+    },
+    "math_match": true
+  }
+}

@@ -62,8 +62,8 @@ class ExplainabilityEngine:
         # 1. EVALUATE MODULE 2: EVIDENCE VERIFICATION (Weight 40%)
         # ----------------------------------------------------------------------
         ev_data = module_breakdowns.get("evidence", {})
-        ev_status = ev_data.get("status", "NO_FACT_CHECK_FOUND")
-        ev_score = ev_data.get("score", 50.0)
+        ev_status = ev_data.get("evidence_state") or ev_data.get("status", "NO_FACT_CHECK_FOUND")
+        ev_score = ev_data.get("score") if ev_data.get("score") is not None else 50.0
         ev_checks = ev_data.get("fact_checks", [])
         ev_flags = ev_data.get("flags", [])
 
@@ -111,7 +111,7 @@ class ExplainabilityEngine:
         # 2. EVALUATE MODULE 4: SIMILAR CONTENT & TEMPORAL (Weight 25%)
         # ----------------------------------------------------------------------
         sim_data = module_breakdowns.get("similarity", {})
-        sim_score = sim_data.get("score", 75.0)
+        sim_score = sim_data.get("score") if sim_data.get("score") is not None else 75.0
         sim_recycled = sim_data.get("recycled_content", False)
         sim_flags = sim_data.get("flags", [])
         corpus_count = sim_data.get("corpus_size", 3)
@@ -147,7 +147,7 @@ class ExplainabilityEngine:
         # 3. EVALUATE MODULE 1: COMMENT ANALYSIS (Weight 20%)
         # ----------------------------------------------------------------------
         comm_data = module_breakdowns.get("comments", {})
-        comm_score = comm_data.get("score", 50.0)
+        comm_score = comm_data.get("score") if comm_data.get("score") is not None else 50.0
         comm_metrics = comm_data.get("metrics", {})
         comm_fact_check = comm_data.get("fact_check", {})
         comm_flags = comm_data.get("flags", [])
@@ -236,9 +236,9 @@ class ExplainabilityEngine:
         # 4. EVALUATE MODULE 3: USER BEHAVIOUR (Weight 15%)
         # ----------------------------------------------------------------------
         user_data = module_breakdowns.get("user_behaviour", {})
-        user_score = user_data.get("score", 50.0)
+        user_score = user_data.get("score") if user_data.get("score") is not None else 50.0
         user_flags = user_data.get("flags", [])
-        user_anom = user_data.get("anomaly_score", 0.0)
+        user_anom = user_data.get("anomaly_score") if user_data.get("anomaly_score") is not None else 0.0
         user_metrics = user_data.get("metrics", {})
         has_age = user_metrics.get("account_age_days") is not None
 
@@ -279,6 +279,9 @@ class ExplainabilityEngine:
             else:
                 module_explanations["user_behaviour"] = "Author behaviour metrics show standard baseline activity."
 
+        if "ANOMALOUS_BEHAVIOURAL_PATTERN" in user_flags or user_anom >= 0.60:
+            confidence_notes.append("Behavioral anomaly detected in author profile indicates suspicious account activity, but does not alone prove content falsity.")
+
         # ----------------------------------------------------------------------
         # 5. SORT & RANK CONTRIBUTING FACTORS
         # ----------------------------------------------------------------------
@@ -291,6 +294,18 @@ class ExplainabilityEngine:
         summary_sentences: list[str] = [
             f"Social Guard evaluates this content as {classification} (Credibility Score: {final_score:.1f}/100)."
         ]
+
+        fus_data = module_breakdowns.get("fusion", {})
+        contribs = fus_data.get("module_contributions") or fus_data.get("weighted_contributions")
+        if contribs:
+            c_ev = contribs.get("evidence_score") if "evidence_score" in contribs else contribs.get("evidence_verification", 0.0)
+            c_sim = contribs.get("similarity_score") if "similarity_score" in contribs else contribs.get("similar_content", 0.0)
+            c_comm = contribs.get("comment_score") if "comment_score" in contribs else contribs.get("comment_analysis", 0.0)
+            c_usr = contribs.get("behaviour_score") if "behaviour_score" in contribs else contribs.get("user_behaviour", 0.0)
+            summary_sentences.append(
+                f"Module contributions: Evidence {c_ev:.1f} pts (40%), Similar Content {c_sim:.1f} pts (25%), "
+                f"Comment Analysis {c_comm:.1f} pts (20%), User Behaviour {c_usr:.1f} pts (15%)."
+            )
 
         if negative_factors:
             top_neg = negative_factors[0]["factor"]
@@ -310,13 +325,15 @@ class ExplainabilityEngine:
             if ai_pct >= 70.0:
                 ai_note = f"Statistical AI-generation indicator suggests high probability ({ai_pct:.1f}%) of synthetic/AI generation. Note: Stylistic indicators are orthogonal to factual credibility and do not prove content is false."
             elif ai_pct <= 30.0:
-                ai_note = f"Text displays human-written stylistic distribution (Statistical AI indicator: {ai_pct:.1f}%)."
+                ai_note = f"Text displays human-written stylistic distribution (Statistical AI indicator: {ai_pct:.1f}%). Note: Human-authored text does not guarantee factual accuracy."
             else:
                 ai_note = f"Text stylistic markers are mixed (Statistical AI indicator: {ai_pct:.1f}%)."
             confidence_notes.append(ai_note)
 
+        summary_text = " ".join(summary_sentences)
         return {
-            "summary": " ".join(summary_sentences),
+            "summary": summary_text,
+            "explanation_summary": summary_text,
             "positive_factors": positive_factors,
             "negative_factors": negative_factors,
             "module_explanations": module_explanations,

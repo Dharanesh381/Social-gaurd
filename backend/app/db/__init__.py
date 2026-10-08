@@ -1,29 +1,5 @@
-"""Database models and session package."""
+"""Database package (DEACTIVATED).
 
-from app.db.models import (
-    AnalysisResultModel,
-    CommentModel,
-    EvidenceModel,
-    PostModel,
-    UserModel,
-)
-from app.db.session import (
-    AsyncSessionLocal,
-    Base,
-    engine,
-    get_db_session,
-    init_db_tables,
-)
-
-__all__ = [
-    "AnalysisResultModel",
-    "AsyncSessionLocal",
-    "Base",
-    "CommentModel",
-    "EvidenceModel",
-    "PostModel",
-    "UserModel",
-    "engine",
-    "get_db_session",
-    "init_db_tables",
-]
+Database persistence has been removed from the active Social Guard architecture.
+All analysis is performed entirely in memory.
+"""

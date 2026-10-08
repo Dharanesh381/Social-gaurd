@@ -22,7 +22,7 @@ window.__SOCIAL_GUARD_EXTRACT__ = function () {
 
 if (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.onMessage) {
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    if (message.action === "EXTRACT_CURRENT_POST" || message.action === "EXTRACT_PAGE_CONTENT") {
+    if (message.action === "EXTRACT_CURRENT_POST" || message.action === "EXTRACT_PAGE_CONTENT" || message.action === "EXTRACT_POST") {
       try {
         const result = extractCurrentlyViewedPost();
         sendResponse(result);

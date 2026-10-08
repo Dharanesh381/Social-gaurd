@@ -139,6 +139,13 @@ class SocialMediaPost(BaseModel):
         default_factory=list, max_length=200, description="Extracted comments associated with the post"
     )
 
+    @field_validator("text")
+    @classmethod
+    def validate_text(cls, v: str) -> str:
+        if not v or not v.strip():
+            raise ValueError("Post text cannot be empty or whitespace only.")
+        return v
+
     @field_validator("platform")
     @classmethod
     def normalize_platform(cls, v: str) -> str:
@@ -279,7 +286,7 @@ class ScoreFusionResult(BaseModel):
 
 
 class FinalAnalysisResult(BaseModel):
-    """Top-Level Social Guard Analysis Result."""
+    """Top-Level Social Guard Analysis Result returned by POST /analyze."""
     request_id: str = Field(..., description="Unique verification session ID")
     consolidated_score: float | None = Field(
         None, ge=0.0, le=100.0, description="Consolidated credibility score (0-100)"
@@ -297,6 +304,41 @@ class FinalAnalysisResult(BaseModel):
     module_scores: dict[str, float | None] = Field(
         default_factory=dict, description="Summary mapping of module name to normalized score"
     )
+    # Direct top-level module results & metadata
+    request_info: dict[str, Any] = Field(
+        default_factory=dict, description="Request session information"
+    )
+    post_info: dict[str, Any] = Field(
+        default_factory=dict, description="Extracted social media post summary"
+    )
+    module_1: dict[str, Any] = Field(
+        default_factory=dict, description="Module 1: Comment Analysis complete result"
+    )
+    module_2: dict[str, Any] = Field(
+        default_factory=dict, description="Module 2: Evidence Verification complete result"
+    )
+    module_3: dict[str, Any] = Field(
+        default_factory=dict, description="Module 3: User Behaviour Analysis complete result"
+    )
+    module_4: dict[str, Any] = Field(
+        default_factory=dict, description="Module 4: Similar Content Analysis complete result"
+    )
+    module_5: dict[str, Any] = Field(
+        default_factory=dict, description="Module 5: Score Fusion complete result"
+    )
+    xai_explanation: dict[str, Any] = Field(
+        default_factory=dict, description="Comprehensive Explainable AI (XAI) factors and summary"
+    )
+    processing_timings: dict[str, float] = Field(
+        default_factory=dict, description="Execution timings across all modules in milliseconds"
+    )
+    warnings: list[str] = Field(
+        default_factory=list, description="Non-fatal warnings and diagnostic notices"
+    )
+    errors: list[str] = Field(
+        default_factory=list, description="Module-level execution error messages if any occurred"
+    )
+    # Backward compatibility full nested breakdown
     module_results: dict[str, Any] = Field(
         default_factory=dict,
         description="Full nested breakdown of all module outputs and intermediate metrics",

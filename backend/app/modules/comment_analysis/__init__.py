@@ -11,6 +11,7 @@ from app.modules.comment_analysis.preprocessing import (
     normalize_text_for_exact_match,
 )
 from app.modules.comment_analysis.similarity import (
+    compute_semantic_clusters,
     compute_semantic_similarity_features,
     get_sbert_model,
 )
@@ -23,6 +24,7 @@ __all__ = [
     "clean_text_for_embedding",
     "comment_analyzer",
     "compute_emoji_features",
+    "compute_semantic_clusters",
     "compute_semantic_similarity_features",
     "compute_temporal_features",
     "extract_emojis",

@@ -1,5 +1,6 @@
 """Health check endpoint router."""
 
+from app.config import settings
 from app.schemas.response import HealthCheckResponse
 from fastapi import APIRouter, status
 
@@ -18,5 +19,5 @@ async def health_check() -> HealthCheckResponse:
     return HealthCheckResponse(
         status="ok",
         service="social-guard",
-        version="0.1.0",
+        version=settings.APP_VERSION,
     )

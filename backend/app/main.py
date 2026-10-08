@@ -11,8 +11,6 @@ from fastapi.responses import JSONResponse
 
 from app.api.v1.router import api_v1_router
 from app.config import settings
-from app.db.session import init_db_tables
-from app.schemas.response import HealthCheckResponse
 from app.utils.exceptions import SocialGuardException
 from app.utils.logging import logger
 
@@ -21,10 +19,6 @@ from app.utils.logging import logger
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Lifespan context manager for startup and shutdown routines."""
     logger.info("Initializing Social Guard API v%s in [%s] mode...", settings.APP_VERSION, settings.APP_ENV)
-    try:
-        await init_db_tables()
-    except Exception as exc:
-        logger.error("Failed to initialize database tables on startup: %s", exc)
 
     # Warm up Sentence Transformer model so the first request does not suffer cold-start delay
     try:
@@ -65,25 +59,10 @@ def create_application() -> FastAPI:
         allow_headers=["Content-Type", "Authorization", "X-Requested-With", "Accept"],
     )
 
-    # Include API Routers (mounted both at /api/v1 prefix and root for full compatibility)
+    # Include API Routers (exposing only GET /health and POST /analyze)
+    app.include_router(api_v1_router)
     if settings.API_V1_PREFIX:
         app.include_router(api_v1_router, prefix=settings.API_V1_PREFIX)
-    app.include_router(api_v1_router)
-
-    # Root health endpoint
-    @app.get(
-        "/health",
-        response_model=HealthCheckResponse,
-        tags=["Health"],
-        summary="Service Health Check",
-    )
-    async def root_health_check() -> HealthCheckResponse:
-        """Root health check returning service status."""
-        return HealthCheckResponse(
-            status="ok",
-            service="social-guard",
-            version=settings.APP_VERSION,
-        )
 
     # Custom Exception Handlers
     @app.exception_handler(SocialGuardException)

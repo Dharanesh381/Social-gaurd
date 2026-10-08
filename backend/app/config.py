@@ -10,7 +10,7 @@ class Settings(BaseSettings):
 
     # Application
     APP_NAME: str = "Social Guard API"
-    APP_VERSION: str = "0.1.0"
+    APP_VERSION: str = "1.0.0"
     APP_ENV: str = "development"
     DEBUG: bool = True
     HOST: str = "0.0.0.0"
@@ -30,8 +30,6 @@ class Settings(BaseSettings):
         default="", description="Google Fact Check Tools API Key"
     )
 
-    # Database (Defaults to SQLite for local development; override via DATABASE_URL in .env for PostgreSQL)
-    DATABASE_URL: str = "sqlite+aiosqlite:///./social_guard.db"
 
     # ML & Model Defaults
     SBERT_MODEL_NAME: str = "all-MiniLM-L6-v2"

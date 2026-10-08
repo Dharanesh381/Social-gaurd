@@ -32,7 +32,7 @@ RATING_MAP = {
     "hoax": 0.0,
     "scam": 0.0,
     
-    # Mixed / Misleading terms
+    # Mixed / Misleading / Partially True terms
     "half true": 0.5,
     "half false": 0.5,
     "mixed": 0.5,
@@ -43,6 +43,10 @@ RATING_MAP = {
     "manipulated": 0.1,
     "partly false": 0.25,
     "partially correct": 0.6,
+    "partially true": 0.55,
+    "partly true": 0.55,
+    "somewhat true": 0.55,
+    "mixture": 0.5,
     "inconclusive": 0.5,
 }
 
@@ -68,7 +72,7 @@ def normalize_fact_check_rating(raw_rating: str) -> tuple[float, str]:
             score = 0.0
         elif re.search(r"\b(mostly false|misleading|out of context|altered|manipulated)\b", clean_rating):
             score = 0.2
-        elif re.search(r"\b(half true|mixed|inconclusive|partly)\b", clean_rating):
+        elif re.search(r"\b(half true|half false|partially true|partly true|somewhat true|mixture|mixed|inconclusive|partly)\b", clean_rating):
             score = 0.5
         elif re.search(r"\b(mostly true|mostly correct)\b", clean_rating):
             score = 0.85
