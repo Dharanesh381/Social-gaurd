@@ -69,3 +69,42 @@ async def test_unsupported_media_handling():
     assert audio_res["status"] == "UNSUPPORTED_MEDIA_TYPE"
     assert audio_res["media_type"] == "audio"
     assert audio_res["ai_generation_probability"] is None
+
+
+def test_ai_stylistic_differentiation():
+    """Verify that formal AI discursive markers score significantly higher than human slang."""
+    detector = PerplexityTextAIDetector()
+
+    ai_text = (
+        "Furthermore, comprehensive analysis indicates that artificial intelligence presents multifaceted paradigms. "
+        "Consequently, one must take into consideration all relevant factors, highlighting the intricate nuances."
+    )
+    human_text = "yo bro tbh this is totally crazy lmao, no way this is actually real fr fr!!!"
+
+    res_ai = detector.detect_text(ai_text)
+    res_human = detector.detect_text(human_text)
+
+    assert res_ai["status"] == "ANALYZED"
+    assert res_human["status"] == "ANALYZED"
+    assert res_ai["ai_generation_probability"] > 75.0
+    assert res_human["ai_generation_probability"] < 25.0
+    assert res_ai["ai_generation_probability"] > res_human["ai_generation_probability"] + 50.0
+
+
+@pytest.mark.asyncio
+async def test_image_generator_metadata():
+    """Verify that images with generator parameters/signatures are identified as synthetic."""
+    detector = StatisticalImageArtifactDetector()
+    img = Image.new("RGB", (64, 64), color=(100, 100, 100))
+
+    from PIL import PngImagePlugin
+    meta = PngImagePlugin.PngInfo()
+    meta.add_text("parameters", "A photorealistic cat in space, Midjourney v6 prompt")
+
+    buf = io.BytesIO()
+    img.save(buf, format="PNG", pnginfo=meta)
+
+    res = await detector.detect_image(buf.getvalue())
+    assert res["status"] == "ANALYZED"
+    assert res["ai_generation_probability"] >= 90.0
+    assert res["metrics"]["generator_tag_detected"] is True

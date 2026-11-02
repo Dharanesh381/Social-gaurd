@@ -94,6 +94,37 @@ class UserProfile(BaseModel):
         None, ge=0.0, le=1.0, description="Repetition rate of specific hashtags in timeline"
     )
 
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_profile_aliases(cls, data: Any) -> Any:
+        """Seamlessly map alternative schema field names (e.g. followers_count, duplicate_posts_ratio)."""
+        if not isinstance(data, dict):
+            return data
+        d = dict(data)
+
+        # followers / followers_count
+        if "followers" not in d and "followers_count" in d:
+            d["followers"] = d.get("followers_count")
+        # following / following_count
+        if "following" not in d and "following_count" in d:
+            d["following"] = d.get("following_count")
+        # posts_per_day / recent_posts_frequency_per_day / posts_count
+        if "posts_per_day" not in d or d["posts_per_day"] is None or d["posts_per_day"] == 0:
+            if "recent_posts_frequency_per_day" in d and d["recent_posts_frequency_per_day"] is not None:
+                d["posts_per_day"] = d["recent_posts_frequency_per_day"]
+        # comments_per_day / recent_comments_frequency_per_day
+        if "comments_per_day" not in d or d["comments_per_day"] is None or d["comments_per_day"] == 0:
+            if "recent_comments_frequency_per_day" in d and d["recent_comments_frequency_per_day"] is not None:
+                d["comments_per_day"] = d["recent_comments_frequency_per_day"]
+        # duplicate_content_ratio / duplicate_posts_ratio
+        if "duplicate_content_ratio" not in d and "duplicate_posts_ratio" in d:
+            d["duplicate_content_ratio"] = d.get("duplicate_posts_ratio")
+        # engagement_rate / average_engagement_rate
+        if "engagement_rate" not in d and "average_engagement_rate" in d:
+            d["engagement_rate"] = d.get("average_engagement_rate")
+
+        return d
+
 
 class Comment(BaseModel):
     """Social media comment on a target post."""
@@ -127,6 +158,9 @@ class SocialMediaPost(BaseModel):
     post_id: str | None = Field(None, max_length=200, description="Platform unique post ID")
     platform: str = Field(
         default="generic", max_length=50, description="Origin platform (e.g. twitter, reddit, facebook, generic)"
+    )
+    post_url: HttpUrl | str | None = Field(
+        None, description="Direct URL to original post if available"
     )
     text: str = Field(..., min_length=1, max_length=50000, description="Main text body of the post")
     hashtags: list[str] = Field(default_factory=list, max_length=100, description="List of hashtags")

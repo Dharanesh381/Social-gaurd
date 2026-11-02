@@ -46,8 +46,12 @@ def extract_user_features(profile: UserProfile | None) -> dict[str, float]:
         return FEATURE_DEFAULTS.copy()
 
     # Followers / Following
-    followers = float(max(0, profile.followers))
-    following = float(max(0, profile.following))
+    if profile.followers == 0 and profile.following == 0 and profile.account_age_days is None:
+        followers = FEATURE_DEFAULTS["followers"]
+        following = FEATURE_DEFAULTS["following"]
+    else:
+        followers = float(max(0, profile.followers))
+        following = float(max(0, profile.following))
     ff_ratio = followers / max(1.0, following)
 
     # Account Age

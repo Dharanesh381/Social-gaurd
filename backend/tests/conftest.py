@@ -9,10 +9,14 @@ from app.modules.evidence_verification.factcheck_client import fact_check_client
 
 @pytest.fixture(autouse=True)
 def reset_fact_check_client():
-    """Ensure fact_check_client method search_claims is clean and reset across test runs."""
+    """Ensure fact_check_client method search_claims and fact_check_cache are clean and reset across test runs."""
+    from app.modules.evidence_verification.cache import fact_check_cache
+
     original_search = fact_check_client.search_claims
+    fact_check_cache.clear()
     yield
     fact_check_client.search_claims = original_search
+    fact_check_cache.clear()
 
 
 @pytest.fixture

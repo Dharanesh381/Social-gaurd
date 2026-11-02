@@ -124,7 +124,7 @@ const DEMO_PRESETS = {
   ai_factual: {
     platform: "twitter",
     post_url: "https://x.com/astro_briefs/status/555123456",
-    text: "The James Webb Space Telescope has successfully captured high-resolution transmission spectra of exoplanet WASP-96b, providing detailed atmospheric composition data.",
+    text: "Comprehensive analysis confirms that the James Webb Space Telescope has successfully captured high-resolution transmission spectra of exoplanet WASP-96b, highlighting the detailed atmospheric composition and water vapor signatures across the planetary spectrum.",
     hashtags: ["#JWST", "#Exoplanets", "#Astronomy"],
     media: [
       { url: "https://example.com/wasp96b_spectrum.png", media_type: "image" }
@@ -266,30 +266,57 @@ export function validateAndBuildAnalysisPayload(data, isDemo = false) {
   if (data.author && typeof data.author === "object") {
     const a = data.author;
     const authorUsername = (a.username || data.author_username || "author").trim();
+    const followersVal = (a.followers != null || a.followers_count != null) ?
+      Math.max(0, parseInt(a.followers ?? a.followers_count, 10)) : 250;
+    const followingVal = (a.following != null || a.following_count != null) ?
+      Math.max(0, parseInt(a.following ?? a.following_count, 10)) : 300;
+    const ageVal = (a.account_age_days != null && !isNaN(a.account_age_days)) ?
+      Math.max(0, Number(a.account_age_days)) : 365;
+    const postsDayVal = (a.posts_per_day != null || a.recent_posts_frequency_per_day != null) ?
+      Math.max(0.0, Number(a.posts_per_day ?? a.recent_posts_frequency_per_day)) : 2.0;
+    const commentsDayVal = (a.comments_per_day != null || a.recent_comments_frequency_per_day != null) ?
+      Math.max(0.0, Number(a.comments_per_day ?? a.recent_comments_frequency_per_day)) : 3.0;
+    const dupRatioVal = (a.duplicate_content_ratio != null || a.duplicate_posts_ratio != null) ?
+      Math.min(1.0, Math.max(0.0, Number(a.duplicate_content_ratio ?? a.duplicate_posts_ratio))) : 0.03;
+    const hashtagRepVal = (a.hashtag_repetition_rate != null) ?
+      Math.min(1.0, Math.max(0.0, Number(a.hashtag_repetition_rate))) : 0.05;
+    const engRateVal = (a.engagement_rate != null || a.average_engagement_rate != null) ?
+      Math.min(1.0, Math.max(0.0, Number(a.engagement_rate ?? a.average_engagement_rate))) : 0.03;
+
     authorObj = {
       username: authorUsername,
-      account_age_days: (a.account_age_days != null && !isNaN(a.account_age_days)) ? Math.max(0, Number(a.account_age_days)) : null,
-      followers_count: (a.followers != null || a.followers_count != null) ? Math.max(0, parseInt(a.followers ?? a.followers_count, 10)) : 0,
-      following_count: (a.following != null || a.following_count != null) ? Math.max(0, parseInt(a.following ?? a.following_count, 10)) : 0,
-      posts_count: (a.posts_count != null) ? Math.max(0, parseInt(a.posts_count, 10)) : 0,
-      recent_posts_frequency_per_day: (a.posts_per_day != null || a.recent_posts_frequency_per_day != null) ?
-        Math.max(0.0, Number(a.posts_per_day ?? a.recent_posts_frequency_per_day)) : null,
-      recent_comments_frequency_per_day: (a.comments_per_day != null || a.recent_comments_frequency_per_day != null) ?
-        Math.max(0.0, Number(a.comments_per_day ?? a.recent_comments_frequency_per_day)) : null,
-      duplicate_posts_ratio: (a.duplicate_content_ratio != null || a.duplicate_posts_ratio != null) ?
-        Math.min(1.0, Math.max(0.0, Number(a.duplicate_content_ratio ?? a.duplicate_posts_ratio))) : null,
-      hashtag_repetition_rate: (a.hashtag_repetition_rate != null) ?
-        Math.min(1.0, Math.max(0.0, Number(a.hashtag_repetition_rate))) : null,
-      average_engagement_rate: (a.engagement_rate != null || a.average_engagement_rate != null) ?
-        Math.min(1.0, Math.max(0.0, Number(a.engagement_rate ?? a.average_engagement_rate))) : null,
-      average_posting_interval_seconds: null
+      account_age_days: ageVal,
+      followers: followersVal,
+      followers_count: followersVal,
+      following: followingVal,
+      following_count: followingVal,
+      posts_per_day: postsDayVal,
+      recent_posts_frequency_per_day: postsDayVal,
+      comments_per_day: commentsDayVal,
+      recent_comments_frequency_per_day: commentsDayVal,
+      duplicate_content_ratio: dupRatioVal,
+      duplicate_posts_ratio: dupRatioVal,
+      hashtag_repetition_rate: hashtagRepVal,
+      engagement_rate: engRateVal,
+      average_engagement_rate: engRateVal
     };
   } else if (data.author_username) {
     authorObj = {
       username: String(data.author_username).trim(),
-      followers_count: 0,
-      following_count: 0,
-      posts_count: 0
+      account_age_days: 365,
+      followers: 250,
+      followers_count: 250,
+      following: 300,
+      following_count: 300,
+      posts_per_day: 2.0,
+      recent_posts_frequency_per_day: 2.0,
+      comments_per_day: 3.0,
+      recent_comments_frequency_per_day: 3.0,
+      duplicate_content_ratio: 0.03,
+      duplicate_posts_ratio: 0.03,
+      hashtag_repetition_rate: 0.05,
+      engagement_rate: 0.03,
+      average_engagement_rate: 0.03
     };
   }
 
@@ -493,7 +520,11 @@ if (typeof document !== "undefined") {
       }
       if (detectedAuthorChip) {
         const username = payload.author?.username || payload.author_username || "--";
-        detectedAuthorChip.innerText = `Author: @${username}`;
+        const flwStr = (payload.author && payload.author.followers) ? ` (${Number(payload.author.followers).toLocaleString()} flw)` : "";
+        detectedAuthorChip.innerText = `Author: @${username}${flwStr}`;
+        if (payload.author) {
+          detectedAuthorChip.title = `Author: @${username} | Age: ${payload.author.account_age_days || '--'}d | Followers: ${payload.author.followers || 0} | Following: ${payload.author.following || 0}`;
+        }
       }
       if (detectedCommentsChip) {
         const count = Array.isArray(payload.comments) ? payload.comments.length : 0;
@@ -621,12 +652,27 @@ if (typeof document !== "undefined") {
         hashtags: data.hashtags || [],
         media: safeMedia,
         timestamp: data.timestamp || null,
-        author: data.author_username ? {
+        author: data.author ? {
+          username: data.author.username || data.author_username,
+          account_age_days: data.author.account_age_days ?? 365,
+          followers: data.author.followers ?? 250,
+          following: data.author.following ?? 300,
+          posts_per_day: data.author.posts_per_day ?? 2.0,
+          comments_per_day: data.author.comments_per_day ?? 3.0,
+          engagement_rate: data.author.engagement_rate ?? 0.03,
+          duplicate_content_ratio: data.author.duplicate_content_ratio ?? 0.03,
+          hashtag_repetition_rate: data.author.hashtag_repetition_rate ?? 0.05
+        } : (data.author_username ? {
           username: data.author_username,
-          account_age_days: null,
-          followers: 0,
-          following: 0
-        } : null,
+          account_age_days: 365,
+          followers: 250,
+          following: 300,
+          posts_per_day: 2.0,
+          comments_per_day: 3.0,
+          engagement_rate: 0.03,
+          duplicate_content_ratio: 0.03,
+          hashtag_repetition_rate: 0.05
+        } : null),
         engagement: data.engagement || null,
         comments: (data.comments || []).map((c, idx) => ({
           comment_id: c.comment_id || `c_${idx + 1}`,
@@ -971,10 +1017,11 @@ if (typeof document !== "undefined") {
       updateElementText("m1-metric-debunk", m1.debunk_ratio != null ? `${Math.round(m1.debunk_ratio * 100)}%` : "0%");
 
       // Module 2: Evidence
+      const isM2Cached = m2.cached || (m2.flags && m2.flags.includes("FACT_CHECK_CACHE_HIT"));
       renderModuleCard(
         "evidence",
         m2.score,
-        m2.status || "COMPLETED",
+        isM2Cached ? "CACHED" : (m2.status || "COMPLETED"),
         m2.explanation || "Cross-referenced claims against Google Fact Check Tools and accredited publishers."
       );
       const claimsCount = Array.isArray(m2.claims) ? m2.claims.length : 0;
@@ -1178,15 +1225,40 @@ if (typeof document !== "undefined") {
           `;
         }
 
-        // Show matching items if any exist
-        const matches = m4.matches || [];
-        if (matches.length > 0) {
-          matches.forEach(m => {
+        // Show candidate reference matches if any relevant matches exist (>= 20% similarity)
+        const relevantMatches = (m4.matches || []).filter(m => {
+          const maxSim = Math.max(m.visual_similarity || 0, m.semantic_similarity || 0, m.keyword_similarity || 0);
+          return maxSim >= 0.20;
+        });
+
+        if (relevantMatches.length > 0) {
+          const matchesHeader = document.createElement("div");
+          matchesHeader.className = "similar-matches-header";
+          matchesHeader.style.marginTop = "8px";
+          matchesHeader.style.marginBottom = "4px";
+          matchesHeader.innerHTML = `<span style="font-size:11px; font-weight:600; color:var(--text-secondary);">Reference Corpus Matches (${relevantMatches.length}):</span>`;
+          simContainer.appendChild(matchesHeader);
+
+          relevantMatches.forEach(m => {
             const mEl = document.createElement("div");
             mEl.className = "similar-match-item";
+            const label = m.source_context || m.item_id || "Archived Item";
+            const previewText = m.text ? (m.text.length > 80 ? m.text.slice(0, 80) + "..." : m.text) : "";
+            const semPct = Math.round((m.semantic_similarity || 0) * 100);
+            const visPct = Math.round((m.visual_similarity || 0) * 100);
+            const kwPct = Math.round((m.keyword_similarity || 0) * 100);
+
             mEl.innerHTML = `
-              <span class="match-title">${escapeHtml(m.title || m.id || "Corpus Match")}</span>
-              <span class="match-meta">Visual: ${Math.round((m.visual_similarity || 0) * 100)}% | Semantic: ${Math.round((m.semantic_similarity || 0) * 100)}%</span>
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2px;">
+                <span class="match-title" style="font-weight:600; font-size:11px;">${escapeHtml(label)}</span>
+                <span style="font-size:10px; padding:1px 6px; border-radius:4px; background:${m.is_known_debunked ? 'rgba(239,68,68,0.2)' : 'rgba(59,130,246,0.2)'}; color:${m.is_known_debunked ? 'var(--color-likely-fake)' : 'var(--color-probably-real)'};">${m.is_known_debunked ? 'Debunked Hoax' : 'Historical Reference'}</span>
+              </div>
+              ${previewText ? `<p style="font-size:11px; color:var(--text-dim); margin:2px 0 4px; font-style:italic;">"${escapeHtml(previewText)}"</p>` : ''}
+              <div class="match-meta" style="font-size:10px; color:var(--text-secondary);">
+                <span>Semantic: ${semPct}%</span> &bull; 
+                <span>Visual: ${visPct}%</span> &bull; 
+                <span>Keywords: ${kwPct}%</span>
+              </div>
             `;
             simContainer.appendChild(mEl);
           });
@@ -1229,11 +1301,20 @@ if (typeof document !== "undefined") {
         statusEl.innerText = (status || "COMPLETED").toUpperCase();
         statusEl.className = "module-status-badge";
         const st = (status || "").toUpperCase();
-        if (st === "COMPLETED") statusEl.classList.add("status-completed");
-        else if (st === "PARTIAL") statusEl.classList.add("status-partial");
-        else if (st === "UNAVAILABLE") statusEl.classList.add("status-unavailable");
-        else if (st === "ERROR") statusEl.classList.add("status-error");
-        else statusEl.classList.add("status-pending");
+        if (st === "CACHED") {
+          statusEl.classList.add("status-cached");
+          statusEl.innerText = "⚡ CACHED";
+        } else if (st === "COMPLETED") {
+          statusEl.classList.add("status-completed");
+        } else if (st === "PARTIAL") {
+          statusEl.classList.add("status-partial");
+        } else if (st === "UNAVAILABLE") {
+          statusEl.classList.add("status-unavailable");
+        } else if (st === "ERROR") {
+          statusEl.classList.add("status-error");
+        } else {
+          statusEl.classList.add("status-pending");
+        }
       }
     }
 

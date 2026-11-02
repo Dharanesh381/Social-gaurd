@@ -12,6 +12,7 @@ from app.modules.score_fusion.engine import score_fusion_engine
 from app.modules.score_fusion.explainability import explainability_engine
 from app.modules.similar_content.analyzer import similar_content_analyzer
 from app.modules.user_behaviour.analyzer import user_behaviour_analyzer
+from app.platform.author_resolver import resolve_and_enrich_author
 from app.schemas.domain_models import (
     AnalysisRequest,
     CredibilityClassification,
@@ -128,6 +129,8 @@ class AnalysisOrchestratorService:
                 image_urls=img_urls,
                 comments=post.comments,
                 comment_claims=comment_fact_check.get("extracted_comment_claims", []),
+                post_id=post.post_id,
+                post_url=str(post.post_url) if getattr(post, "post_url", None) else None,
             )
             module_timing["evidence_verification_ms"] = round((time.perf_counter() - m2_start) * 1000, 2)
             m2_score = m2_res.get("evidence_score")
@@ -152,11 +155,13 @@ class AnalysisOrchestratorService:
                 "sources": m2_res.get("sources", []),
                 "flags": m2_res.get("flags", []),
                 "explanation": m2_res.get("explanation", ""),
+                "cached": m2_res.get("from_cache", False),
             }
             module_breakdowns["evidence"] = m2_output
             all_flags.extend(m2_res.get("flags", []))
-            logger.info("Module 2 (Evidence) finished in %sms | Status: %s | Score: %s",
-                        module_timing["evidence_verification_ms"], m2_status, m2_score)
+            cache_note = " [CACHED]" if m2_res.get("from_cache") else ""
+            logger.info("Module 2 (Evidence)%s finished in %sms | Status: %s | Score: %s",
+                        cache_note, module_timing["evidence_verification_ms"], m2_status, m2_score)
         except Exception as exc:
             logger.error("Module 2 (Evidence) failed: %s", exc)
             module_timing["evidence_verification_ms"] = round((time.perf_counter() - m2_start) * 1000, 2)
@@ -180,6 +185,16 @@ class AnalysisOrchestratorService:
         # ----------------------------------------------------------------------
         m3_start = time.perf_counter()
         try:
+            # Enrich author profile from post URL or platform heuristics if incomplete
+            try:
+                post.author = await resolve_and_enrich_author(
+                    author=post.author,
+                    post_url=str(post.post_url) if getattr(post, "post_url", None) else None,
+                    platform=post.platform,
+                )
+            except Exception as enrich_err:
+                logger.debug("Author enrichment non-fatal notice: %s", enrich_err)
+
             m3_res = user_behaviour_analyzer.analyze(post.author)
             module_timing["user_behaviour_ms"] = round((time.perf_counter() - m3_start) * 1000, 2)
             m3_score = m3_res.get("behaviour_score")
@@ -224,13 +239,14 @@ class AnalysisOrchestratorService:
         # ----------------------------------------------------------------------
         m4_start = time.perf_counter()
         try:
-            first_img_url = [str(m.url) for m in post.media if m.url]
-            first_img = first_img_url[0] if first_img_url else None
+            img_urls = [str(m.url) for m in post.media if m.url]
+            pre_hash = post.media[0].perceptual_hash if (post.media and post.media[0].perceptual_hash) else None
             m4_res = await similar_content_analyzer.analyze(
                 text=post.text,
                 hashtags=post.hashtags,
-                image_urls=[first_img] if first_img else [],
+                image_urls=img_urls,
                 post_timestamp=post.timestamp,
+                image_phash_override=pre_hash,
             )
             module_timing["similar_content_ms"] = round((time.perf_counter() - m4_start) * 1000, 2)
             m4_score = m4_res.get("score", m4_res.get("similarity_score"))
@@ -347,15 +363,33 @@ class AnalysisOrchestratorService:
         ai_start = time.perf_counter()
         ai_prob = None
         ai_details = {}
+
+        media_prob = None
         if post.media and post.media[0].url:
             ai_media_res = await ai_media_detector.analyze_media_url(str(post.media[0].url))
-            ai_prob = ai_media_res.get("ai_generation_probability")
+            media_prob = ai_media_res.get("ai_generation_probability")
             ai_details["media_ai_detection"] = ai_media_res
 
-        if ai_prob is None and post.text:
+        text_prob = None
+        if post.text:
             ai_text_res = ai_media_detector.analyze_text(post.text)
-            ai_prob = ai_text_res.get("ai_generation_probability")
+            text_prob = ai_text_res.get("ai_generation_probability")
             ai_details["text_ai_detection"] = ai_text_res
+
+        # Synthesize multi-modal AI probability:
+        if media_prob is not None and text_prob is not None:
+            # If either modality strongly exhibits synthetic generation (>= 60%), prioritize the synthetic modality
+            if max(media_prob, text_prob) >= 60.0:
+                ai_prob = round(max(media_prob, text_prob), 2)
+            else:
+                ai_prob = round(0.5 * media_prob + 0.5 * text_prob, 2)
+        elif media_prob is not None:
+            ai_prob = media_prob
+        elif text_prob is not None:
+            ai_prob = text_prob
+        else:
+            ai_prob = None
+
         module_timing["ai_detection_ms"] = round((time.perf_counter() - ai_start) * 1000, 2)
 
         # ----------------------------------------------------------------------
@@ -383,6 +417,34 @@ class AnalysisOrchestratorService:
         )
 
         # ----------------------------------------------------------------------
+        # DYNAMIC HISTORICAL CORPUS INDEXING
+        # Index verified post into historical corpus for future similarity & recycling detection
+        # ----------------------------------------------------------------------
+        try:
+            from app.modules.similar_content.content_repository import (
+                HistoricalContentItem,
+                content_repository,
+            )
+            from app.modules.similar_content.hashtag_keyword import extract_keywords
+
+            if post.text and len(post.text.strip()) > 10:
+                content_repository.add_item(
+                    HistoricalContentItem(
+                        item_id=f"rec_{post.post_id or uuid.uuid4().hex[:8]}",
+                        text=post.text.strip(),
+                        hashtags=post.hashtags,
+                        keywords=extract_keywords(post.text),
+                        image_phash=m4_res.get("post_phash") if 'm4_res' in locals() else None,
+                        image_dhash=m4_res.get("post_dhash") if 'm4_res' in locals() else None,
+                        first_seen_timestamp=post.timestamp or datetime.now(timezone.utc),
+                        is_known_debunked_narrative=(final_credibility_score < 40.0),
+                        source_context=f"Verified {post.platform.upper()} post ({classification_str})",
+                    )
+                )
+        except Exception as rep_err:
+            logger.debug("Corpus auto-indexing non-fatal notice: %s", rep_err)
+
+        # ----------------------------------------------------------------------
         # CONSTRUCT COMPLETE PRODUCTION JSON RESPONSE
         # ----------------------------------------------------------------------
         request_info = {
@@ -394,6 +456,7 @@ class AnalysisOrchestratorService:
         post_info = {
             "platform": post.platform,
             "post_id": post.post_id,
+            "post_url": str(post.post_url) if getattr(post, "post_url", None) else None,
             "text": post.text,
             "text_length": len(post.text),
             "timestamp": post.timestamp.isoformat() if post.timestamp else None,

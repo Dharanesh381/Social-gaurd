@@ -2,6 +2,10 @@
 
 from typing import Any
 
+from app.modules.evidence_verification.cache import (
+    FactCheckCache,
+    fact_check_cache,
+)
 from app.modules.evidence_verification.claim_extractor import (
     BaseClaimExtractor,
     claim_extractor,
@@ -36,10 +40,12 @@ class EvidenceVerifier:
         api_client: GoogleFactCheckClient | None = None,
         extractor: BaseClaimExtractor | None = None,
         ocr: BaseOCRService | None = None,
+        cache: FactCheckCache | None = None,
     ):
         self.api_client = api_client or fact_check_client
         self.extractor = extractor or claim_extractor
         self.ocr = ocr or ocr_service
+        self.cache = cache or fact_check_cache
 
     async def verify(
         self,
@@ -47,6 +53,9 @@ class EvidenceVerifier:
         image_urls: list[str] | None = None,
         comments: list[Any] | None = None,
         comment_claims: list[str] | None = None,
+        post_id: str | None = None,
+        post_url: str | None = None,
+        bypass_cache: bool = False,
     ) -> dict[str, Any]:
         """Execute full Evidence-Based Verification pipeline.
 
@@ -66,6 +75,30 @@ class EvidenceVerifier:
         import re
         flags: list[str] = []
         image_urls = image_urls or []
+
+        # ----------------------------------------------------------------------
+        # Step 0: Check In-Memory Fact-Check Post Cache
+        # ----------------------------------------------------------------------
+        if not bypass_cache and self.cache:
+            cached_result = self.cache.get_post(
+                post_text=post_text,
+                image_urls=image_urls,
+                post_id=post_id,
+                post_url=post_url,
+            )
+            if cached_result is not None:
+                logger.info(
+                    "Evidence verification cache HIT for post '%s' - retrieved previous fact-check result without API call",
+                    (post_text or "")[:40],
+                )
+                cached_copy = dict(cached_result)
+                cached_copy["from_cache"] = True
+                cached_copy["cached"] = True
+                c_flags = list(cached_copy.get("flags", []))
+                if "FACT_CHECK_CACHE_HIT" not in c_flags:
+                    c_flags.append("FACT_CHECK_CACHE_HIT")
+                cached_copy["flags"] = c_flags
+                return cached_copy
 
         # ----------------------------------------------------------------------
         # Step 1: Optional OCR extraction for text in attached images
@@ -114,7 +147,7 @@ class EvidenceVerifier:
             else:
                 explanation = "No verifiable claim found. Post content contains no verifiable factual claims (Neutral 50/100 baseline)."
 
-            return {
+            no_claims_res = {
                 "score": 50.0,
                 "evidence_score": 50.0,
                 "status": "NO_FACT_CHECK_FOUND",
@@ -135,6 +168,15 @@ class EvidenceVerifier:
                     "normalization_status": "NO_CLAIMS",
                 },
             }
+            if self.cache:
+                self.cache.set_post(
+                    post_text=post_text,
+                    result=no_claims_res,
+                    image_urls=image_urls,
+                    post_id=post_id,
+                    post_url=post_url,
+                )
+            return no_claims_res
 
         # ----------------------------------------------------------------------
         # Step 3: Fact-Check Retrieval via Google Fact Check Tools API
@@ -263,7 +305,7 @@ class EvidenceVerifier:
                     "Assigned neutral baseline score (50/100). Absence of fact-checks does not verify or disprove content."
                 )
 
-            return {
+            no_fact_checks_res = {
                 "score": 50.0,
                 "evidence_score": 50.0,
                 "status": status,
@@ -284,6 +326,15 @@ class EvidenceVerifier:
                     "normalization_status": "NEUTRAL_BASELINE",
                 },
             }
+            if self.cache and api_status_observed in ("SUCCESS", "NO_FACT_CHECK_FOUND"):
+                self.cache.set_post(
+                    post_text=post_text,
+                    result=no_fact_checks_res,
+                    image_urls=image_urls,
+                    post_id=post_id,
+                    post_url=post_url,
+                )
+            return no_fact_checks_res
 
         # Weighted average of fact-check scores weighted by source credibility
         total_weight = sum(m["source_credibility"] for m in all_matched_reviews)
@@ -327,7 +378,7 @@ class EvidenceVerifier:
             pub_names = list(dict.fromkeys(m["publisher"] for m in all_matched_reviews))
             explanation += f" Aggregated across {len(all_matched_reviews)} reviews from {', '.join(pub_names[:3])}."
 
-        return {
+        final_result = {
             "score": evidence_score,
             "evidence_score": evidence_score,
             "status": status,
@@ -348,6 +399,18 @@ class EvidenceVerifier:
                 "normalization_status": f"WEIGHTED_{status}",
             },
         }
+
+        # Store in post-level cache for instant retrieval on repeat analysis
+        if self.cache and status not in ("API_KEY_MISSING", "ERROR"):
+            self.cache.set_post(
+                post_text=post_text,
+                result=final_result,
+                image_urls=image_urls,
+                post_id=post_id,
+                post_url=post_url,
+            )
+
+        return final_result
 
 
 evidence_verifier = EvidenceVerifier()

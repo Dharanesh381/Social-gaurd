@@ -2,6 +2,8 @@
 
 import re
 from abc import ABC, abstractmethod
+from typing import Any
+
 
 
 class BaseClaimExtractor(ABC):
@@ -79,6 +81,10 @@ class SimpleClaimExtractor(BaseClaimExtractor):
             return True
         for q_pattern in self.QUESTION_STARTERS:
             if re.search(q_pattern, lower):
+                # Avoid false-positive on acronym "WHO" (World Health Organization)
+                first_token = sentence.strip().split()[0] if sentence.strip() else ""
+                if first_token == "WHO":
+                    continue
                 return True
 
         # 2. Greetings
@@ -158,25 +164,23 @@ class SimpleClaimExtractor(BaseClaimExtractor):
         """Generate high-yield search queries for Google Fact Check API.
 
         Google Fact Check API yields significantly higher match rates on concise,
-        entity-rich keyphrases (3-6 words) rather than lengthy conversational clauses.
+        entity-rich keyphrases (3-5 words) rather than lengthy conversational clauses.
         """
-        queries: list[str] = [claim.strip()]
-
-        # Strip conversational lead-ins
+        # Common social media clickbait, false-attribution, and conversational lead-ins
         lead_ins = [
-            r"^(apparently|reportedly|supposedly|allegedly|rumor has it that|sources say that)\s+",
-            r"^(viral video shows that|new report claims that|leaked documents reveal that)\s+",
-            r"^(did you know that|people are saying that|everyone is talking about)\s+",
+            r"^(breaking|urgent|alert|shocking|exclusive|just in|report|must share|watch|update|viral)\s*[:!—–-]*\s*",
+            r"^(apparently|reportedly|supposedly|allegedly|rumor has it that|sources say that|according to sources)\s+",
+            r"^(viral video|new report|leaked documents?|classified files?|secret memo|study)\s+(shows?|claims?|reveals?|proves?|confirms?)\s+(that\s+)?",
+            r"^(scientists|doctors|researchers|officials|experts)\s+(at\s+[a-zA-Z\s]+)?\s+(confirmed?|found?|discovered?|claim|claims|say|says|warn|warns)\s+(that\s+)?",
+            r"^(did you know that|people are saying that|everyone is talking about|have you heard that)\s+",
             r"^(listen up|look at this|check this out|share this)\s*[:!—–-]*\s*",
         ]
         stripped = claim.strip()
         for p in lead_ins:
             stripped = re.sub(p, "", stripped, flags=re.IGNORECASE).strip()
-        if stripped and stripped != claim and stripped not in queries:
-            queries.append(stripped)
 
-        # Generate a concise 3-6 word core keyword query by removing common stopwords
-        stopwords = {
+        # Stopwords including reporting/attribution noise verbs that dilute fact check searches
+        noise_words = {
             "a", "an", "the", "in", "on", "at", "by", "for", "with", "about",
             "against", "between", "into", "through", "during", "before", "after",
             "above", "below", "to", "from", "up", "down", "is", "are", "was",
@@ -185,16 +189,41 @@ class SimpleClaimExtractor(BaseClaimExtractor):
             "can", "could", "that", "this", "these", "those", "it", "its",
             "and", "but", "or", "nor", "so", "yet", "both", "either", "neither",
             "not", "only", "own", "same", "than", "too", "very", "s", "t", "just",
-            "now", "right", "completely", "all", "out", "of"
+            "now", "right", "completely", "all", "out", "of", "across", "new",
+            "shows", "showed", "proves", "proved", "confirms", "confirmed",
+            "reveals", "revealed", "announced", "announces", "claims", "claimed",
+            "says", "said", "reported", "reports", "stated", "states", "warns",
+            "warned", "discovered", "discovers", "leaked", "secret", "video",
+            "photos", "officials", "official", "people", "everyone", "according",
+            "sources"
         }
-        words = re.findall(r"\b[a-zA-Z0-9_-]+\b", stripped)
-        content_words = [w for w in words if w.lower() not in stopwords]
-        if len(content_words) >= 2:
-            core_query = " ".join(content_words[:6])
-            if core_query not in queries and len(core_query) > 5:
-                queries.append(core_query)
 
-        return queries
+        tokens = re.findall(r"\b[a-zA-Z0-9_-]+\b", stripped)
+        content_words = [t for t in tokens if t.lower() not in noise_words]
+
+        candidates: list[str] = []
+        # 1. High-priority concise 3-4 content words
+        if len(content_words) >= 2:
+            candidates.append(" ".join(content_words[:4]))
+            # 2. Tail keywords if claim had important noun phrases at end
+            if len(content_words) > 4:
+                tail = " ".join(content_words[-4:])
+                if tail not in candidates:
+                    candidates.append(tail)
+            # 3. Up to 6 content words
+            full_content = " ".join(content_words[:6])
+            if full_content not in candidates:
+                candidates.append(full_content)
+
+        # 4. Stripped lead-in sentence
+        if stripped and stripped not in candidates:
+            candidates.append(stripped)
+
+        # 5. Full original claim
+        if claim.strip() not in candidates:
+            candidates.append(claim.strip())
+
+        return candidates
 
     def extract_comment_claims(self, comments: list[Any]) -> list[str]:
         """Extract verifiable claims and fact-check targets mentioned by commenters."""
@@ -230,4 +259,36 @@ class SimpleClaimExtractor(BaseClaimExtractor):
 
 
 claim_extractor = SimpleClaimExtractor()
+
+
+if __name__ == "__main__":
+    extractor = SimpleClaimExtractor()
+    test_samples = [
+        "BREAKING: WHO announces global emergency after mystery respiratory virus spreads across 14 countries.",
+        "Good morning everyone! Have a wonderful day ahead! Thanks for following me.",
+        "I strongly believe that this is the worst economic policy we have ever seen in our lives.",
+        "Did you know that NASA discovered flowing water structures on Mars yesterday? Watch this right now!",
+        "Why did the chicken cross the road? Just kidding lol.",
+        "Leaked documents reveal that the government approved a 50% fuel tax hike effective next month.",
+    ]
+
+    print("=" * 70)
+    print("Social Guard: Evidence Verification — Claim Extractor CLI Demo")
+    print("=" * 70)
+
+    for i, sample in enumerate(test_samples, 1):
+        print(f"\n[{i}] Input:")
+        print(f"    \"{sample}\"")
+        claims = extractor.extract_claims(sample)
+        if claims:
+            print(f"    Claims Extracted ({len(claims)}):")
+            for c in claims:
+                print(f"      • \"{c}\"")
+                queries = extractor.extract_search_queries(c)
+                print(f"        Search Queries: {queries}")
+        else:
+            reason = extractor.classify_filtered_reason(sample)
+            print(f"    Filtered Out: Reason = {reason} (No verifiable factual statement)")
+
+    print("\n" + "=" * 70)
 

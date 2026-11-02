@@ -158,3 +158,87 @@ def test_ui_preset_likely_fake_flow():
     assert data["consolidated_score"] < 40.0
     assert data["module_scores"]["evidence_verification"] == 0.0
     assert data["module_scores"]["user_behaviour"] < 40.0
+
+
+def test_ui_preset_recycled_hoax_flow():
+    """Test the 'Recycled Hoax' preset verification payload."""
+    fact_check_client.search_claims = AsyncMock(return_value={"status": "NO_FACT_CHECK_FOUND", "claims": []})
+
+    payload = {
+        "post": {
+            "platform": "facebook",
+            "text": "BREAKING: Emergency nationwide lockdown declared tonight across all major international airports due to unknown airborne pathogen outbreak! Stock up immediately!",
+            "hashtags": ["#BreakingNews", "#Lockdown", "#Emergency"],
+            "media": [],
+            "author": {
+                "username": "viral_alerts_page",
+                "account_age_days": 12,
+                "followers": 85,
+                "following": 3400,
+                "posts_per_day": 95.0,
+                "comments_per_day": 40.0,
+                "engagement_rate": 0.002,
+                "duplicate_content_ratio": 0.85,
+                "hashtag_repetition_rate": 0.90,
+            },
+            "comments": [
+                {"comment_id": "c_rec1", "text": "This is completely fake news and an old 2020 rumor! Stop lying.", "likes": 92, "emojis": []},
+            ],
+        }
+    }
+
+    resp = client.post("/analyze", json=payload)
+    assert resp.status_code == 200
+    data = resp.json()
+
+    m4 = data["module_4"]
+    assert m4["recycled_content"] is True
+    assert "RECYCLED_HISTORICAL_CONTENT_DETECTED" in m4["flags"]
+    assert data["consolidated_score"] < 50.0
+
+
+def test_ui_preset_ai_factual_flow():
+    """Test the 'AI Factual' preset verification payload.
+
+    Verifies the CRITICAL DESIGN PRINCIPLE:
+    High AI generation probability (orthogonal dimension) does NOT degrade the factual credibility score.
+    """
+    fact_check_client.search_claims = AsyncMock(return_value={"status": "NO_FACT_CHECK_FOUND", "claims": []})
+
+    payload = {
+        "post": {
+            "platform": "twitter",
+            "text": "Comprehensive analysis confirms that the James Webb Space Telescope has successfully captured high-resolution transmission spectra of exoplanet WASP-96b, highlighting the detailed atmospheric composition and water vapor signatures across the planetary spectrum.",
+            "hashtags": ["#JWST", "#Exoplanets", "#Astronomy"],
+            "media": [
+                {"url": "https://example.com/wasp96b_spectrum.png", "media_type": "image"}
+            ],
+            "author": {
+                "username": "astro_briefs",
+                "account_age_days": 900,
+                "followers": 18500,
+                "following": 220,
+                "posts_per_day": 3.0,
+                "comments_per_day": 4.0,
+                "engagement_rate": 0.05,
+                "duplicate_content_ratio": 0.02,
+                "hashtag_repetition_rate": 0.10,
+            },
+            "comments": [
+                {"comment_id": "c_ai1", "text": "Incredible spectral fidelity from NIRISS instrument!", "likes": 34, "emojis": []}
+            ],
+        }
+    }
+
+    resp = client.post("/analyze", json=payload)
+    assert resp.status_code == 200
+    data = resp.json()
+
+    # AI probability is high (orthogonal detection)
+    assert data["ai_generation_probability"] is not None
+    assert data["ai_generation_probability"] >= 0.70  # >= 70% Synthetic
+
+    # Credibility score remains solid (not penalized purely for being AI-generated)
+    assert data["consolidated_score"] >= 50.0
+
+

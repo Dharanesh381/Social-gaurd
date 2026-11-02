@@ -7,6 +7,7 @@ from typing import Any
 import httpx
 
 from app.config import settings
+from app.modules.evidence_verification.cache import FactCheckCache, fact_check_cache
 
 logger = logging.getLogger(__name__)
 
@@ -21,10 +22,16 @@ class GoogleFactCheckClient:
 
     BASE_URL = "https://factchecktools.googleapis.com/v1alpha1/claims:search"
 
-    def __init__(self, api_key: str | None = None, timeout: float = 6.0):
+    def __init__(
+        self,
+        api_key: str | None = None,
+        timeout: float = 6.0,
+        cache: FactCheckCache | None = None,
+    ):
         # Read API key strictly from settings/environment, never hardcoded
         self.api_key = api_key if api_key is not None else getattr(settings, "GOOGLE_FACT_CHECK_API_KEY", "")
         self.timeout = timeout
+        self.cache = cache or fact_check_cache
         self._client: httpx.AsyncClient | None = None
         self._client_loop = None
 
@@ -50,19 +57,34 @@ class GoogleFactCheckClient:
             self._client = None
 
     async def search_claims(
-        self, query: str, language_code: str = "en", max_results: int = 5
+        self,
+        query: str,
+        language_code: str = "en",
+        max_results: int = 5,
+        bypass_cache: bool = False,
     ) -> dict[str, Any]:
-        """Search Google Fact Check Tools for matching claim reviews.
+        """Search Google Fact Check Tools for matching claim reviews with in-memory caching.
 
         Returns:
             Raw API JSON dictionary or standardized error response dict.
         """
+        if not query or not query.strip():
+            return {"claims": [], "status": "EMPTY_QUERY"}
+
+        # 1. Check in-memory query cache first
+        if not bypass_cache and self.cache:
+            cached_res = self.cache.get_query(query=query, language_code=language_code)
+            if cached_res is not None:
+                logger.info(
+                    "Fact check cache HIT for query '%s' (%d claims retrieved without API call)",
+                    query[:30],
+                    len(cached_res.get("claims", [])),
+                )
+                return cached_res
+
         if not self.api_key:
             logger.warning("Google Fact Check API Key is missing. Skipping external search.")
             return {"claims": [], "status": "API_KEY_MISSING"}
-
-        if not query or not query.strip():
-            return {"claims": [], "status": "EMPTY_QUERY"}
 
         params = {
             "query": query.strip(),
@@ -88,7 +110,16 @@ class GoogleFactCheckClient:
 
                 claims = data.get("claims", [])
                 logger.info("Fact check API query '%s' returned %d claims", query[:30], len(claims))
-                return {"claims": claims, "status": "SUCCESS"}
+                res = {"claims": claims, "status": "SUCCESS"}
+                if self.cache:
+                    self.cache.set_query(query=query, result=res, language_code=language_code)
+                return res
+
+            elif response.status_code == 404:
+                res = {"claims": [], "status": "NO_FACT_CHECK_FOUND"}
+                if self.cache:
+                    self.cache.set_query(query=query, result=res, language_code=language_code)
+                return res
 
             elif response.status_code == 429:
                 logger.warning("Google Fact Check API rate limit reached (429).")

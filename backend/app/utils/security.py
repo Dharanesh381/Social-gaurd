@@ -102,7 +102,15 @@ async def safe_fetch_image_bytes(
         return None
 
     try:
-        async with httpx.AsyncClient(timeout=timeout, follow_redirects=True) as client:
+        browser_headers = {
+            "User-Agent": (
+                "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"
+            ),
+            "Accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
+            "Accept-Language": "en-US,en;q=0.9",
+        }
+        async with httpx.AsyncClient(timeout=timeout, follow_redirects=True, headers=browser_headers) as client:
             # Stream response to enforce size limit before buffering into RAM
             async with client.stream("GET", image_url) as response:
                 if response.status_code != 200:

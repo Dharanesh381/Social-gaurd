@@ -4,6 +4,10 @@ from app.modules.evidence_verification.analyzer import (
     EvidenceVerifier,
     evidence_verifier,
 )
+from app.modules.evidence_verification.cache import (
+    FactCheckCache,
+    fact_check_cache,
+)
 from app.modules.evidence_verification.claim_extractor import (
     BaseClaimExtractor,
     SimpleClaimExtractor,
@@ -27,12 +31,14 @@ __all__ = [
     "BaseClaimExtractor",
     "BaseOCRService",
     "EvidenceVerifier",
+    "FactCheckCache",
     "GoogleFactCheckClient",
     "SimpleClaimExtractor",
     "TesseractOCRService",
     "claim_extractor",
     "compute_source_credibility",
     "evidence_verifier",
+    "fact_check_cache",
     "fact_check_client",
     "normalize_fact_check_rating",
     "ocr_service",

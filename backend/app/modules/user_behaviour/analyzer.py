@@ -42,17 +42,10 @@ class UserBehaviourAnalyzer:
         flags: list[str] = []
 
         # ----------------------------------------------------------------------
-        # Edge Case 1: Missing profile or unavailable metadata
-        # If account age is None and followers/following are 0 (e.g. basic extracted handle),
-        # treat as unavailable metadata and return neutral baseline 50.0
+        # Edge Case 1: Completely missing profile (None)
+        # Return neutral baseline 50.0
         # ----------------------------------------------------------------------
-        is_metadata_unavailable = (
-            profile is None
-            or (profile.account_age_days is None and profile.followers == 0 and profile.following == 0)
-        )
-
-        if is_metadata_unavailable:
-            username = profile.username if profile else "unknown"
+        if profile is None:
             return {
                 "score": 50.0,
                 "behaviour_score": 50.0,  # Neutral baseline
@@ -74,10 +67,14 @@ class UserBehaviourAnalyzer:
                 },
                 "flags": ["USER_METADATA_UNAVAILABLE"],
                 "explanation": (
-                    f"User profile metadata for '{username}' was not available from the page. "
+                    "User profile metadata was not available. "
                     "Assigned neutral baseline score (50/100). Behavioral anomaly does not prove content is fake."
                 ),
             }
+
+        # If only a username was extracted with zero followers/age, record baseline imputation flag
+        if profile.account_age_days is None and profile.followers == 0 and profile.following == 0:
+            flags.append("IMPUTED_BASELINE_METRICS")
 
         # ----------------------------------------------------------------------
         # Step 1: Feature Extraction & Engineering

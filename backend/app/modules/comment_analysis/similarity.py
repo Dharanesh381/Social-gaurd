@@ -32,7 +32,10 @@ def get_sbert_model():
                     model_name = getattr(settings, "SBERT_MODEL_NAME", "all-MiniLM-L6-v2")
                     device = getattr(settings, "DEVICE", "cpu")
                     logger.info("Loading Sentence-BERT model '%s' on %s...", model_name, device)
-                    _SBERT_MODEL = SentenceTransformer(model_name, device=device)
+                    try:
+                        _SBERT_MODEL = SentenceTransformer(model_name, device=device, local_files_only=True)
+                    except Exception:
+                        _SBERT_MODEL = SentenceTransformer(model_name, device=device)
                 except Exception as exc:
                     logger.error("Failed to load Sentence-BERT model: %s", exc)
                     raise exc

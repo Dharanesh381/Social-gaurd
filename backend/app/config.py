@@ -29,6 +29,15 @@ class Settings(BaseSettings):
     GOOGLE_FACT_CHECK_API_KEY: str = Field(
         default="", description="Google Fact Check Tools API Key"
     )
+    FACT_CHECK_CACHE_ENABLED: bool = Field(
+        default=True, description="Enable in-memory caching of fact check API results"
+    )
+    FACT_CHECK_CACHE_TTL_SECONDS: int = Field(
+        default=86400, description="Fact check cache TTL in seconds (default 24h)"
+    )
+    FACT_CHECK_CACHE_MAX_ENTRIES: int = Field(
+        default=1000, description="Maximum number of cached fact-check queries and post results"
+    )
 
 
     # ML & Model Defaults

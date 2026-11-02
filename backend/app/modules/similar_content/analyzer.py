@@ -124,7 +124,7 @@ class SimilarContentAnalyzer:
             hashtags=list(post_hashtags_set),
             image_phash=post_phash,
             image_dhash=post_dhash,
-            top_k=10,
+            top_k=50,
         )
 
         corpus_count = len(getattr(self.repository, "_items", [])) or len(historical_items) or 3
@@ -219,28 +219,39 @@ class SimilarContentAnalyzer:
                     i_time = item_ts
                 item_age_days = max(0.0, (c_time - i_time).total_seconds() / 86400.0)
 
+            # Compute composite text similarity (combines S-BERT semantic + keyword Jaccard)
+            composite_text_sim = max(sem_sim, round(sem_sim * 0.70 + kw_sim * 0.30, 4))
+
             # Check if this item constitutes a recycled match
-            is_match = (sem_sim >= self.text_similarity_threshold) or (vis_sim >= 0.85)
-            if is_match and item_age_days is not None and item_age_days > 30.0:
+            is_match = (
+                (sem_sim >= self.text_similarity_threshold)
+                or (composite_text_sim >= 0.70 and kw_sim >= 0.30)
+                or (vis_sim >= 0.82)
+            )
+
+            # A narrative is recycled if it matches past archives (> 14 days old or marked debunked)
+            if is_match and (item.is_known_debunked_narrative or (item_age_days is not None and item_age_days > 14.0)):
                 recycled_content = True
-                if best_overall_match is None or max(sem_sim, vis_sim) > max(
-                    max_semantic_sim, max_visual_sim
-                ):
+                curr_strength = max(sem_sim, vis_sim)
+                if best_overall_match is None or curr_strength > getattr(best_overall_match, "_match_strength", -1.0):
+                    item._match_strength = curr_strength
                     best_overall_match = item
                     earliest_timestamp = item.first_seen_timestamp
-                    temporal_age_days = item_age_days
+                    temporal_age_days = item_age_days or 30.0
 
-            matches.append({
-                "item_id": item.item_id,
-                "text": item.text,
-                "visual_similarity": round(vis_sim, 4),
-                "semantic_similarity": round(sem_sim, 4),
-                "keyword_similarity": round(kw_sim, 4),
-                "historical_age_days": round(item_age_days, 1) if item_age_days is not None else None,
-                "first_seen_timestamp": item.first_seen_timestamp.isoformat() if item.first_seen_timestamp else None,
-                "is_known_debunked": item.is_known_debunked_narrative,
-                "source_context": item.source_context,
-            })
+            # Only record matches that exceed non-trivial similarity (> 0.15) or when recycling is flagged
+            if is_match or max(sem_sim, vis_sim, kw_sim) >= 0.15:
+                matches.append({
+                    "item_id": item.item_id,
+                    "text": item.text,
+                    "visual_similarity": round(vis_sim, 4),
+                    "semantic_similarity": round(sem_sim, 4),
+                    "keyword_similarity": round(kw_sim, 4),
+                    "historical_age_days": round(item_age_days, 1) if item_age_days is not None else None,
+                    "first_seen_timestamp": item.first_seen_timestamp.isoformat() if item.first_seen_timestamp else None,
+                    "is_known_debunked": item.is_known_debunked_narrative,
+                    "source_context": item.source_context,
+                })
 
         # Sort matches by strongest similarity descending
         matches.sort(
@@ -276,7 +287,8 @@ class SimilarContentAnalyzer:
             or (len(post_hashtags_set) >= 5)
         )
         if is_sensational_viral:
-            score -= 35.0
+            # Minor variance penalty (10 pts) for sensational formatting when not recycled
+            score -= 10.0
             flags.append("SENSATIONAL_VIRAL_FORMATTING")
 
         if recycled_content:
@@ -291,7 +303,7 @@ class SimilarContentAnalyzer:
             score -= (max_semantic_sim * 15.0)
 
         similarity_score = round(max(0.0, min(100.0, score)), 2)
-        match_status = "HISTORICAL_CORPUS_MATCH" if (max_semantic_sim >= self.text_similarity_threshold or max_visual_sim >= 0.85) else "NO_HISTORICAL_MATCH"
+        match_status = "HISTORICAL_CORPUS_MATCH" if (max_semantic_sim >= self.text_similarity_threshold or max_visual_sim >= 0.85 or recycled_content) else "NO_HISTORICAL_MATCH"
 
         # ----------------------------------------------------------------------
         # Step 7: Explanation Formulation
@@ -324,6 +336,8 @@ class SimilarContentAnalyzer:
             "text_similarity": max_semantic_sim,
             "image_similarity": max_visual_sim,
             "hashtag_similarity": max_keyword_sim,
+            "post_phash": post_phash,
+            "post_dhash": post_dhash,
             "earliest_matching_timestamp": earliest_timestamp.isoformat() if earliest_timestamp else None,
         }
 
